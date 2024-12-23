@@ -1,2 +1,4 @@
 */impl/
 **/build/
+**/*.gprj
+**/*.gprj.user
