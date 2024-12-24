@@ -1,28 +1,21 @@
 #include "leds.h"
+#include "systick.h"
 
-
-void delay(void);
+#define F_CPU   27000000
 
 int main() {
 
     int leds = 0;
+    systick_init(0);
 
     while (1) {
         if (leds == 0b111111) { 
             leds = 0;
         }    
         set_leds(leds);
-        delay();
+        systick_wait(F_CPU/2);
         leds++;
     }
 
     return 0;
-}
-
-void delay() {
-
-    unsigned int counter;
-
-    for (counter = 0; counter < 30000; counter++) {
-    }
 }

@@ -1,7 +1,7 @@
 BUILDDIR:=./build
-SRCS:=main.c leds.c
-OBJS:=$(patsubst %.c, $(BUILDDIR)/%.o, $(SRCS))
-OBJS+=$(BUILDDIR)/startup.o
+SRCS:=main.c leds.c systick.c
+OBJS:=$(BUILDDIR)/startup.o
+OBJS+=$(patsubst %.c, $(BUILDDIR)/%.o, $(SRCS))
 
 MACH:=rv32i2p0
 TARGET_FLAGS:=\

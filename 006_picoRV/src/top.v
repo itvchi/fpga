@@ -28,21 +28,27 @@ module top (
     wire        sram_sel;
     wire        sram_ready;
     wire [31:0] sram_data_o;
+    wire        systick_sel;
+    wire        systick_ready;
+    wire [31:0] systick_data_o;
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
      * SRAM     00000000 - 0001ffff
      * MM_LED   80000000
+     * SYSTICK  80000100 - 80000110
     */
     assign sram_sel = mem_valid && (mem_addr < 32'h00002000);
     assign leds_sel = mem_valid && (mem_addr == 32'h80000000);
+    assign systick_sel = mem_valid && (mem_addr >= 32'h80000100) && (mem_addr < 32'h80000110);
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (sram_ready | leds_ready);
+    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready);
 
     /* mem_rdata bus multiplexer */
     assign mem_rdata = sram_sel ? sram_data_o :
-                        leds_sel ? leds_data_o : 32'h0;
+                        leds_sel ? leds_data_o :
+                        systick_sel ? systick_data_o : 32'h0;
 
     reset_control reset_controller (
         .clk(clk),
@@ -67,6 +73,16 @@ module top (
         .write_en(mem_wstrb[0]),
         .ready(leds_ready),
         .data_o(leds_data_o));
+
+    systick timer (
+        .clk(clk),
+        .reset_n(reset_n),
+        .select(systick_sel),
+        .wstrb(mem_wstrb),
+        .addr(mem_addr[3:0]),
+        .data_i(mem_wdata),
+        .ready(systick_ready),
+        .data_o(systick_data_o));
 
     picorv32 #(
         .STACKADDR(STACKADDR),
