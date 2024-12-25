@@ -3,17 +3,20 @@ module top (
     input rst_btn_n,
     output [5:0] leds);
     
-    parameter [0:0] BARREL_SHIFTER = 0;
-    parameter [0:0] ENABLE_MUL = 0;
-    parameter [0:0] ENABLE_DIV = 0;
-    parameter [0:0] ENABLE_FAST_MUL = 0;
-    parameter [0:0] ENABLE_COMPRESSED = 0;
-    parameter [0:0] ENABLE_IRQ_QREGS = 0;
+    parameter BARREL_SHIFTER = 0;
+    parameter ENABLE_MUL = 0;
+    parameter ENABLE_DIV = 0;
+    parameter ENABLE_FAST_MUL = 0;
+    parameter ENABLE_COMPRESSED = 0;
+    parameter ENABLE_IRQ = 1;
+    parameter ENABLE_IRQ_QREGS = 1;
+    parameter MASKED_IRQ = 32'hffff_ffc0;
+    parameter LATCHED_IRQ = 32'hffff_ffff;
 
     parameter integer MEMBYTES = 8192;
     parameter [31:0] STACKADDR = (MEMBYTES);
-    parameter [31:0] PROGADDR_RESET = 32'h0000_0000;
-    parameter [31:0] PROGADDR_IRQ = 32'h0000_0000;
+    parameter [31:0] PROGADDR_RESET = 32'h0000_0000;    
+    parameter [31:0] PROGADDR_IRQ = 32'h0000_0010;
 
     wire        reset_n; 
     wire [31:0] mem_addr;
@@ -31,6 +34,7 @@ module top (
     wire        systick_sel;
     wire        systick_ready;
     wire [31:0] systick_data_o;
+    wire        systick_irq;
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
@@ -82,7 +86,8 @@ module top (
         .addr(mem_addr[3:0]),
         .data_i(mem_wdata),
         .ready(systick_ready),
-        .data_o(systick_data_o));
+        .data_o(systick_data_o),
+        .irq(systick_irq));
 
     picorv32 #(
         .STACKADDR(STACKADDR),
@@ -93,8 +98,10 @@ module top (
         .ENABLE_MUL(ENABLE_MUL),
         .ENABLE_DIV(ENABLE_DIV),
         .ENABLE_FAST_MUL(ENABLE_FAST_MUL),
-        .ENABLE_IRQ(1),
-        .ENABLE_IRQ_QREGS(ENABLE_IRQ_QREGS)
+        .ENABLE_IRQ(ENABLE_IRQ),
+        .ENABLE_IRQ_QREGS(ENABLE_IRQ_QREGS),
+        .MASKED_IRQ(MASKED_IRQ),
+        .LATCHED_IRQ(LATCHED_IRQ)
     ) cpu (
         .clk         (clk),
         .resetn      (reset_n),
@@ -105,7 +112,7 @@ module top (
         .mem_wdata   (mem_wdata),
         .mem_wstrb   (mem_wstrb),
         .mem_rdata   (mem_rdata),
-        .irq         ('b0));
+        .irq         ({28'b0, systick_irq, 3'b0}));
 
 
     assign leds = ~leds_data_o[5:0];

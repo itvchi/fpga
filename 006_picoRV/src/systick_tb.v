@@ -13,6 +13,7 @@ module systick_tb ();
     wire select;
     wire ready;
     wire [31:0] rdata;
+    wire irq;
 
     /* DUT instantiation */
     systick timer (
@@ -23,7 +24,8 @@ module systick_tb ();
         .addr(addr[3:0]),
         .data_i(wdata),
         .ready(ready),
-        .data_o(rdata));
+        .data_o(rdata),
+        .irq(irq));
 
     /* Generate clock signal */
     initial begin
@@ -78,6 +80,21 @@ module systick_tb ();
         read(32'h80000108);
         #20
         write(32'h80000100, 32'h00020002); /* prescaler = 2 & enable_bit */
+        read(32'h80000104);
+        #20
+        read(32'h80000100);
+        #20
+        read(32'h80000104);
+        #50
+        read(32'h80000104);
+        #50
+        read(32'h80000104);
+        #50
+        read(32'h80000104);
+        #50
+        read(32'h80000104);
+        #20
+        write(32'h80000100, 32'h00020006); /* prescaler = 2, irq & enable_bit */
         read(32'h80000104);
         #20
         read(32'h80000100);

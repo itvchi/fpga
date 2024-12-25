@@ -1,19 +1,20 @@
 BUILDDIR:=./build
-SRCS:=main.c leds.c systick.c
+SRCS:=main.c leds.c systick.c irq.c
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(patsubst %.c, $(BUILDDIR)/%.o, $(SRCS))
 
 MACH:=rv32i2p0
+ABI:=ilp32
 TARGET_FLAGS:=\
 	-mno-save-restore\
 	-march=$(MACH)\
-	-mabi=ilp32\
+	-mabi=$(ABI)\
 	-nostartfiles\
 	-nostdlib\
 	-static\
 
 CFLAGS:=\
-	-c -g -Wall -Wextra\
+	-c -Wall -Wextra\
 	$(TARGET_FLAGS)\
 	-std=gnu11 -O0
 
@@ -26,7 +27,7 @@ OBJCOPY = riscv64-unknown-elf-objcopy
 
 all: mem.hex
 
-$(BUILDDIR)/startup.o: startup.s | build_dir
+$(BUILDDIR)/startup.o: startup.S | build_dir
 	$(CC) $(CFLAGS) -o $@ $<
 
 $(BUILDDIR)/%.o: %.c | build_dir
