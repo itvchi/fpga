@@ -4,37 +4,28 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef void (*systick_cb)(void *);
+
+typedef enum {
+    SYSTICK_PRIO_HIGH = 0,
+    SYSTICK_PRIO_MEDIUM,
+    SYSTICK_PRIO_LOW,
+    __SYSTICK_PRIO_COUNT
+} systick_prio_t;
+
 typedef struct {
-    volatile uint32_t CONFIG;
-    volatile uint32_t STATUS;
-    volatile uint32_t COUNTER;  
-} Systick_TypeDef;
-
-typedef union {
-    uint32_t value;
-    struct {
-        uint32_t reset         :  1; /* Reset peripheral */
-        uint32_t enable        :  1; /* Enable counting */
-        uint32_t irq           :  1; /* Enable irq */
-        uint32_t reserved3_15  : 13;
-        uint32_t prescaler     : 16; /* Clock prescaler */
-    };
-} SystickConfig_TypeDef;
-
-typedef union {
-    uint32_t value;
-    struct {
-        uint32_t pending       :  1; /* Counter is working */
-        uint32_t reserved1_31  : 31;
-    };
-} SystickStatus_TypeDef;
-
-#define SYSTICK_BASE           0x80000100
-#define SYSTICK                ((Systick_TypeDef *) SYSTICK_BASE)
+    systick_cb cb;
+    void *ctx;
+    systick_prio_t prio;
+    uint32_t interval;
+} systick_callbacks_t;
 
 void systick_init(uint32_t prescaler);
 void systick_irq(bool enable);
 void systick_start(uint32_t value);
 void systick_wait(uint32_t value);
+
+void systick_init_irq(uint32_t prescaler, uint32_t value);
+void systick_add_event(systick_cb cb, void *ctx, systick_prio_t prio, uint32_t interval);
 
 #endif /* _SYSTICK_H_ */

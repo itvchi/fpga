@@ -14,33 +14,26 @@ void delay() {
     }
 }
 
+void led_action(void* ctx) {
+
+    int *led_ctx = (int*)ctx;
+    *led_ctx ^= 0b000011;
+    set_leds(*led_ctx);
+}
+
 int main() {
 
     int counter = 0;
 
-    systick_init(0);
-    systick_irq(true);
-    systick_start(F_CPU/10);
+    systick_add_event(led_action, &leds, SYSTICK_PRIO_HIGH, 2);
+    systick_init_irq(0, F_CPU/10);
 
     while (1) {
         leds ^= 0b100000;
         set_leds(leds);
         delay();
         counter++;
-        if (counter == 10) {
-            mask_irq(IRQ_SYSTICK);
-        }
-        if (counter == 20) {
-            unmask_irq(IRQ_SYSTICK);
-            counter = 0;
-        }
     }
 
     return 0;
-}
-
-void systick_irq_handler() {
-    leds ^= 0b000011;
-    set_leds(leds);
-    systick_start(F_CPU/10);
 }

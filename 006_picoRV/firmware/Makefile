@@ -3,6 +3,7 @@ SRCS:=main.c leds.c systick.c irq.c
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(BUILDDIR)/_irq.o
 OBJS+=$(patsubst %.c, $(BUILDDIR)/%.o, $(SRCS))
+LIBS:=/usr/lib/gcc/riscv64-unknown-elf/13.2.0/rv32i/ilp32/libgcc.a
 
 MACH:=rv32i2p0
 ABI:=ilp32
@@ -35,7 +36,7 @@ $(BUILDDIR)/%.o: %.c | build_dir
 	$(CC) $(CFLAGS) -o $@ $<
 
 final.elf: $(OBJS) | build_dir 
-	$(CC) $(LDFLAGS) -o $(BUILDDIR)/$@ $^
+	$(CC) $(LDFLAGS) -o $(BUILDDIR)/$@ $^ $(LIBS)
 
 final.bin: final.elf
 	$(OBJCOPY) -O binary $(BUILDDIR)/$^ $(BUILDDIR)/$@
