@@ -1,34 +1,40 @@
 ENTRY(_start)
 
+_estack = ORIGIN(RAM) + LENGTH(RAM);
+
+MEMORY
+{
+    RAM    (xrw)    : ORIGIN = 0x00000000,   LENGTH = 8K
+}
+
 SECTIONS
 {
     /* text: test code section */
     . = 0x0;
     .text :
     {
-    *(.text)
-    }
-    .sbss :
-    {
-    *(.sbss)
-    }
-    .bss :
-    {
-    *(.bss)
+        . = ALIGN(4);
+        KEEP(*(.entry.start));
+        . = 0x100;
+        KEEP(*(.entry.irq_vector))
+        . = ALIGN(4);
+        *(.text)
     }
     .rodata :
     {
-    *(.rodata)
+        *(.rodata)
     }
-    .srodata :
-    {
-    *(.srodata)
-    }
-    /* data: Initialized data segment */
     .data :
     {
-    *(.data)
+        *(.data)
     }
-    /* End of uninitalized data segement */
-    _end = .;
+    . = ALIGN(4);
+    .bss :
+    {
+        _sbss = .;
+        *(.bss)
+        *(.sbss)
+        . = ALIGN(4);
+        _ebss = .;
+    }
 }

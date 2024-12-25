@@ -16,7 +16,7 @@ module top (
     parameter integer MEMBYTES = 8192;
     parameter [31:0] STACKADDR = (MEMBYTES);
     parameter [31:0] PROGADDR_RESET = 32'h0000_0000;    
-    parameter [31:0] PROGADDR_IRQ = 32'h0000_0010;
+    parameter [31:0] PROGADDR_IRQ = 32'h0000_0100;
 
     wire        reset_n; 
     wire [31:0] mem_addr;

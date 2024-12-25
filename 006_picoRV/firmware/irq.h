@@ -12,12 +12,11 @@ typedef enum {
 typedef enum {
     IRQ_PRIO_HIGH = 0,
     IRQ_PRIO_MEDIUM,
-    IRQ_PRIO_LOW
+    IRQ_PRIO_LOW,
+    __IRQ_PRIO_COUNT
 } irq_prio_t;
 
 void mask_irq(irq_t irq);
 void unmask_irq(irq_t irq);
-
-void irq_init();
 
 #endif /* _IRQ_H_ */

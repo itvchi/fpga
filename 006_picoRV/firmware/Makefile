@@ -1,6 +1,7 @@
 BUILDDIR:=./build
 SRCS:=main.c leds.c systick.c irq.c
 OBJS:=$(BUILDDIR)/startup.o
+OBJS+=$(BUILDDIR)/_irq.o
 OBJS+=$(patsubst %.c, $(BUILDDIR)/%.o, $(SRCS))
 
 MACH:=rv32i2p0
@@ -27,7 +28,7 @@ OBJCOPY = riscv64-unknown-elf-objcopy
 
 all: mem.hex
 
-$(BUILDDIR)/startup.o: startup.S | build_dir
+$(BUILDDIR)/%.o: %.S | build_dir
 	$(CC) $(CFLAGS) -o $@ $<
 
 $(BUILDDIR)/%.o: %.c | build_dir

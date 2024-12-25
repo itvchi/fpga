@@ -18,8 +18,6 @@ int main() {
 
     int counter = 0;
 
-    irq_init();
-
     systick_init(0);
     systick_irq(true);
     systick_start(F_CPU/10);
