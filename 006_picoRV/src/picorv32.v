@@ -1035,7 +1035,7 @@ module picorv32 #(
 		end
 
 		if (decoder_trigger && !decoder_pseudo_trigger) begin
-			pcpi_insn <= WITH_PCPI ? mem_rdata_q : 'bx;
+			pcpi_insn <= WITH_PCPI ? mem_rdata_q : 'bZ;
 
 			instr_beq   <= is_beq_bne_blt_bge_bltu_bgeu && mem_rdata_q[14:12] == 3'b000;
 			instr_bne   <= is_beq_bne_blt_bge_bltu_bgeu && mem_rdata_q[14:12] == 3'b001;

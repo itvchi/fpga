@@ -73,7 +73,7 @@ module top (
         .clk(clk),
         .reset_n(reset_n),
         .select(leds_sel),
-        .data_i(mem_wdata[5:0]),
+        .data_i(mem_wdata),
         .write_en(mem_wstrb[0]),
         .ready(leds_ready),
         .data_o(leds_data_o));
@@ -88,6 +88,8 @@ module top (
         .ready(systick_ready),
         .data_o(systick_data_o),
         .irq(systick_irq));
+
+    wire trap_unconnected;
 
     picorv32 #(
         .STACKADDR(STACKADDR),
@@ -112,7 +114,12 @@ module top (
         .mem_wdata   (mem_wdata),
         .mem_wstrb   (mem_wstrb),
         .mem_rdata   (mem_rdata),
-        .irq         ({28'b0, systick_irq, 3'b0}));
+        .irq         ({28'b0, systick_irq, 3'b0}),
+        .pcpi_wr     (1'b0),
+        .pcpi_rd     (32'b0),
+        .pcpi_wait   (1'b0),
+        .pcpi_ready  (1'b0),
+        .trap        (trap_unconnected));
 
 
     assign leds = ~leds_data_o[5:0];
