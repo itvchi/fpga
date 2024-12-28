@@ -38,6 +38,16 @@ SECTIONS
         _edata = .;
     } > RAM AT> FLASH
 
+    _sicode = LOADADDR(.code_ram);
+
+    .code_ram :
+    {
+        . = ALIGN(4);
+        _scode = .;
+        *(.code_ram)
+        _ecode = .;
+    } > RAM AT> FLASH
+
     .bss :
     {
         . = ALIGN(4);

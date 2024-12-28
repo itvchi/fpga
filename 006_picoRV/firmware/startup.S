@@ -31,6 +31,22 @@ LoopCopyDataInit:
 
 DoneCopyDataInit:
 
+	la t0, _scode
+	la t1, _ecode
+	la t2, _sicode
+	li t3, 0
+
+LoopCopyCodeInit:
+	add t4, t0, t3
+	bge t4, t1, DoneCopyCodeInit 
+	lw t5, 0(t2)
+	sw t5, 0(t4)
+	addi t2, t2, 4
+	addi t3, t3, 4
+	j LoopCopyCodeInit
+
+DoneCopyCodeInit:
+
 /* Zero fill the BSS segment. */
 	la t0, _sbss
 	la t1, _ebss

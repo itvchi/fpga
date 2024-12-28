@@ -1,5 +1,5 @@
 BUILDDIR:=./build
-SRCS:=main.c leds.c systick.c irq.c
+SRCS:=main.c leds.c systick.c irq.c perf.c
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(BUILDDIR)/_irq.o
 OBJS+=$(patsubst %.c, $(BUILDDIR)/%.o, $(SRCS))

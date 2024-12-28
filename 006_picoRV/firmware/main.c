@@ -1,6 +1,7 @@
 #include "leds.h"
 #include "systick.h"
 #include "irq.h"
+#include "perf.h"
 
 #define F_CPU   27000000
 
@@ -22,6 +23,9 @@ void led_action(void* ctx) {
 }
 
 int main() {
+
+    // perf_flash();
+    // perf_ram();
 
     int counter = 0;
 
