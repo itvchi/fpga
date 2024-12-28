@@ -5,6 +5,7 @@ _estack = ORIGIN(RAM) + LENGTH(RAM);
 MEMORY
 {
     RAM    (xrw)    : ORIGIN = 0x00000000,   LENGTH = 8K
+    FLASH   (xr)    : ORIGIN = 0x00020000,   LENGTH = 76K
 }
 
 SECTIONS
@@ -19,15 +20,15 @@ SECTIONS
         KEEP(*(.entry.irq_vector))
         . = ALIGN(4);
         *(.text)
-    }
+    } > RAM
     .rodata :
     {
         *(.rodata)
-    }
+    } > RAM
     .data :
     {
         *(.data)
-    }
+    } > RAM
     . = ALIGN(4);
     .bss :
     {
@@ -36,5 +37,10 @@ SECTIONS
         *(.sbss)
         . = ALIGN(4);
         _ebss = .;
-    }
+    } > RAM
+    .flash :
+    {
+        . = ALIGN(4);
+        *(.flash)
+    } > FLASH
 }

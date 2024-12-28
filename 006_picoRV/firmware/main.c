@@ -6,6 +6,7 @@
 
 volatile int leds;
 
+__attribute__((section(".flash")))
 void delay() {
 
     volatile unsigned int counter;
@@ -16,7 +17,7 @@ void delay() {
 
 void led_action(void* ctx) {
 
-    int *led_ctx = (int*)ctx;
+    volatile int *led_ctx = (volatile int*)ctx;
     *led_ctx ^= 0b000011;
     set_leds(*led_ctx);
 }
@@ -25,7 +26,7 @@ int main() {
 
     int counter = 0;
 
-    systick_add_event(led_action, &leds, SYSTICK_PRIO_HIGH, 2);
+    systick_add_event(led_action, (void*)&leds, SYSTICK_PRIO_HIGH, 2);
     systick_init_irq(0, F_CPU/10);
 
     while (1) {

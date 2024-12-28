@@ -39,10 +39,11 @@ final.elf: $(OBJS) | build_dir
 	$(CC) $(LDFLAGS) -o $(BUILDDIR)/$@ $^ $(LIBS)
 
 final.bin: final.elf
-	$(OBJCOPY) -O binary $(BUILDDIR)/$^ $(BUILDDIR)/$@
+	$(OBJCOPY) -O binary --remove-section=.flash $(BUILDDIR)/$^ $(BUILDDIR)/final.bin
+	$(OBJCOPY) -O binary --only-section=.flash $(BUILDDIR)/$^ $(BUILDDIR)/flash.bin
 
 mem.hex: final.bin
-	od -v -An -t x4 -w4 $(BUILDDIR)/final.bin > ../src/mem.hex	
+	od -v -An -t x4 -w4 $(BUILDDIR)/final.bin > ../src/mem.hex
 
 build_dir:
 	mkdir -p $(BUILDDIR)
@@ -50,5 +51,5 @@ build_dir:
 clean:
 	rm -r $(BUILDDIR)
 
-flash:
-	openFPGALoader -b tangnano9k -f ../impl/pnr/picoRV.fs
+flash: # Changed to custom openFPGALoader which supports user flash for GW1NR-9C
+	openFPGALoaderGowin -b tangnano9k -f ../impl/pnr/picoRV.fs --mcufw $(BUILDDIR)/flash.bin

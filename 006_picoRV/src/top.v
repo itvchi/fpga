@@ -25,16 +25,19 @@ module top (
     wire [3:0]  mem_wstrb;
     wire        mem_ready;
     wire        mem_instr;
-    wire        leds_sel;
+    reg         leds_sel;
     wire        leds_ready;
     wire [31:0] leds_data_o;
-    wire        sram_sel;
+    reg         sram_sel;
     wire        sram_ready;
     wire [31:0] sram_data_o;
-    wire        systick_sel;
+    reg         systick_sel;
     wire        systick_ready;
     wire [31:0] systick_data_o;
     wire        systick_irq;
+    reg         flash_sel;
+    wire [31:0] flash_data_o;
+    wire        flash_ready;
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
@@ -42,17 +45,34 @@ module top (
      * MM_LED   80000000
      * SYSTICK  80000100 - 80000110
     */
-    assign sram_sel = mem_valid && (mem_addr < 32'h00002000);
-    assign leds_sel = mem_valid && (mem_addr == 32'h80000000);
-    assign systick_sel = mem_valid && (mem_addr >= 32'h80000100) && (mem_addr < 32'h80000110);
+
+    always @(*) begin
+        sram_sel <= 1'b0;
+        leds_sel <= 1'b0;               
+        systick_sel <= 1'b0;
+        flash_sel <= 1'b0;
+
+        if (mem_valid) begin
+            if ((mem_addr < 32'h00002000)) begin
+                sram_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h2_0000) && (mem_addr < 32'h3_3000)) begin
+                flash_sel <= 1'b1;
+            end else if (mem_addr == 32'h8000_0000) begin
+                leds_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h80000100) && (mem_addr < 32'h80000110)) begin
+                systick_sel <= 1'b1;
+            end
+        end
+    end
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready);
+    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready | flash_ready);
 
     /* mem_rdata bus multiplexer */
     assign mem_rdata = sram_sel ? sram_data_o :
                         leds_sel ? leds_data_o :
-                        systick_sel ? systick_data_o : 32'h0;
+                        systick_sel ? systick_data_o :
+                        flash_sel  ? flash_data_o : 32'h0;
 
     reset_control reset_controller (
         .clk(clk),
@@ -88,6 +108,17 @@ module top (
         .ready(systick_ready),
         .data_o(systick_data_o),
         .irq(systick_irq));
+
+    user_flash flash (
+        .clk(clk),
+        .reset_n(reset_n),
+        .select(flash_sel),
+        .wstrb(mem_wstrb),
+        .addr(mem_addr[16:2]), // word address, 9-bits row, 6 bits col
+        .data_i(mem_wdata),
+        .ready(flash_ready),
+        .data_o(flash_data_o)
+    );
 
     wire trap_unconnected;
 
