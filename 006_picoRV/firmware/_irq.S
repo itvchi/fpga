@@ -118,16 +118,6 @@ irq_vec:
 
 	picorv32_retirq_insn()
 
-.balign 0x4
-irq_regs:
-	// registers are saved to this memory region during interrupt handling
-	// the program counter is saved as register 0
-	.fill 32,4
-
-	// stack for the interrupt handler
-	.fill 128,4
-irq_stack:
-
 .text
 .balign 4
 timer_instr:
@@ -138,3 +128,14 @@ timer_instr:
 maskirq_instr:
 	picorv32_maskirq_insn(a0, a0);
 	ret
+
+.data
+.balign 0x4
+irq_regs:
+	// registers are saved to this memory region during interrupt handling
+	// the program counter is saved as register 0
+	.fill 32,4
+
+	// stack for the interrupt handler
+	.fill 128,4
+irq_stack:

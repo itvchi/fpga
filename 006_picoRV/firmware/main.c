@@ -6,7 +6,6 @@
 
 volatile int leds;
 
-__attribute__((section(".flash")))
 void delay() {
 
     volatile unsigned int counter;

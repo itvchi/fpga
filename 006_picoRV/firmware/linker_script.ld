@@ -4,14 +4,12 @@ _estack = ORIGIN(RAM) + LENGTH(RAM);
 
 MEMORY
 {
-    RAM    (xrw)    : ORIGIN = 0x00000000,   LENGTH = 8K
-    FLASH   (xr)    : ORIGIN = 0x00020000,   LENGTH = 76K
+    FLASH   (xr)    : ORIGIN = 0x00000000,   LENGTH = 76K
+    RAM    (xrw)    : ORIGIN = 0x00020000,   LENGTH = 8K
 }
 
 SECTIONS
 {
-    /* text: test code section */
-    . = 0x0;
     .text :
     {
         . = ALIGN(4);
@@ -20,27 +18,33 @@ SECTIONS
         KEEP(*(.entry.irq_vector))
         . = ALIGN(4);
         *(.text)
-    } > RAM
+    } > FLASH
+
     .rodata :
     {
+        . = ALIGN(4);
         *(.rodata)
-    } > RAM
+        . = ALIGN(4);
+    } > FLASH
+
+    _sidata = LOADADDR(.data);
+
     .data :
     {
+        . = ALIGN(4);
+        _sdata = .;
         *(.data)
-    } > RAM
-    . = ALIGN(4);
+        . = ALIGN(4);
+        _edata = .;
+    } > RAM AT> FLASH
+
     .bss :
     {
+        . = ALIGN(4);
         _sbss = .;
         *(.bss)
         *(.sbss)
         . = ALIGN(4);
         _ebss = .;
     } > RAM
-    .flash :
-    {
-        . = ALIGN(4);
-        *(.flash)
-    } > FLASH
 }

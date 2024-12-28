@@ -3,6 +3,9 @@
 .global _start
 .global __maskirq
 
+.word _sidata
+.word _sdata
+.word _edata
 .word _estack
 .word _sbss
 .word _ebss
@@ -11,9 +14,24 @@
 _start:
 	la sp, _estack
 
+/* Copy the data segment initializers from FLASH to SRAM */
+	la t0, _sdata
+	la t1, _edata
+	la t2, _sidata
+	li t3, 0
+
+LoopCopyDataInit:
+	add t4, t0, t3
+	bge t4, t1, DoneCopyDataInit 
+	lw t5, 0(t2)
+	sw t5, 0(t4)
+	addi t2, t2, 4
+	addi t3, t3, 4
+	j LoopCopyDataInit
+
+DoneCopyDataInit:
+
 /* Zero fill the BSS segment. */
-/* This is not necessary in this case, because CPU runs code from RAM
-	and all other sections of memory are initialized with data from code */
 	la t0, _sbss
 	la t1, _ebss
 	li t2, 0

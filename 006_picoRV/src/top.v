@@ -14,7 +14,7 @@ module top (
     parameter LATCHED_IRQ = 32'hffff_ffff;
 
     parameter integer MEMBYTES = 8192;
-    parameter [31:0] STACKADDR = (MEMBYTES);
+    parameter [31:0] STACKADDR = 32'h0002_0000 + (MEMBYTES);
     parameter [31:0] PROGADDR_RESET = 32'h0000_0000;    
     parameter [31:0] PROGADDR_IRQ = 32'h0000_0100;
 
@@ -41,7 +41,8 @@ module top (
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
-     * SRAM     00000000 - 0001ffff
+     * FLASH    00000000 - 00012fff
+     * SRAM     00020000 - 00021fff
      * MM_LED   80000000
      * SYSTICK  80000100 - 80000110
     */
@@ -53,13 +54,13 @@ module top (
         flash_sel <= 1'b0;
 
         if (mem_valid) begin
-            if ((mem_addr < 32'h00002000)) begin
-                sram_sel <= 1'b1;
-            end else if ((mem_addr >= 32'h2_0000) && (mem_addr < 32'h3_3000)) begin
+            if (mem_addr < 32'h1_3000) begin
                 flash_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h2_0000) && (mem_addr < 32'h2_2000)) begin
+                sram_sel <= 1'b1;
             end else if (mem_addr == 32'h8000_0000) begin
                 leds_sel <= 1'b1;
-            end else if ((mem_addr >= 32'h80000100) && (mem_addr < 32'h80000110)) begin
+            end else if ((mem_addr >= 32'h8000_0100) && (mem_addr < 32'h8000_0110)) begin
                 systick_sel <= 1'b1;
             end
         end

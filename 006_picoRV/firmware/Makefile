@@ -27,7 +27,7 @@ LDFLAGS:=\
 CC = riscv64-unknown-elf-gcc
 OBJCOPY = riscv64-unknown-elf-objcopy
 
-all: mem.hex
+all: flash.bin
 
 $(BUILDDIR)/%.o: %.S | build_dir
 	$(CC) $(CFLAGS) -o $@ $<
@@ -38,12 +38,8 @@ $(BUILDDIR)/%.o: %.c | build_dir
 final.elf: $(OBJS) | build_dir 
 	$(CC) $(LDFLAGS) -o $(BUILDDIR)/$@ $^ $(LIBS)
 
-final.bin: final.elf
-	$(OBJCOPY) -O binary --remove-section=.flash $(BUILDDIR)/$^ $(BUILDDIR)/final.bin
-	$(OBJCOPY) -O binary --only-section=.flash $(BUILDDIR)/$^ $(BUILDDIR)/flash.bin
-
-mem.hex: final.bin
-	od -v -An -t x4 -w4 $(BUILDDIR)/final.bin > ../src/mem.hex
+flash.bin: final.elf
+	$(OBJCOPY) -O binary $(BUILDDIR)/$^ $(BUILDDIR)/$@
 
 build_dir:
 	mkdir -p $(BUILDDIR)

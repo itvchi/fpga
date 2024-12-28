@@ -11,7 +11,10 @@ module sram #(parameter ADDRWIDTH=13) (
 reg [31:0] mem [2047:0];
 
 initial begin
-    $readmemh("mem.hex", mem);
+    for (integer i = 0; i < 1024; i = i + 1) begin
+        mem[i] = 32'd0; 
+        mem[i + 1024] = 32'd0; 
+    end
 end
 
 always @(posedge clk) begin
