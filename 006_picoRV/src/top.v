@@ -122,6 +122,18 @@ module top (
     );
 
     wire trap_unconnected;
+    wire mem_la_read_unconnected;
+    wire mem_la_write_unconnected;
+    wire [31:0] mem_la_addr_unconnected;
+    wire [31:0] mem_la_wdata_unconnected;
+    wire [ 3:0] mem_la_wstrb_unconnected;
+    wire pcpi_valid_unconnected;
+    wire [31:0] pcpi_insn_unconnected;
+    wire [31:0] pcpi_rs1_unconnected;
+    wire [31:0] pcpi_rs2_unconnected;
+    wire [31:0] eoi_unconnected;
+    wire trace_valid_unconnected;
+	wire [35:0] trace_data_unconnected;
 
     picorv32 #(
         .STACKADDR(STACKADDR),
@@ -147,11 +159,23 @@ module top (
         .mem_wstrb   (mem_wstrb),
         .mem_rdata   (mem_rdata),
         .irq         ({28'b0, systick_irq, 3'b0}),
-        .pcpi_wr     (1'b0),
-        .pcpi_rd     (32'b0),
-        .pcpi_wait   (1'b0),
-        .pcpi_ready  (1'b0),
-        .trap        (trap_unconnected));
+        .trap           (trap_unconnected),
+        .mem_la_read    (mem_la_read_unconnected),
+        .mem_la_write   (mem_la_write_unconnected),
+        .mem_la_addr    (mem_la_addr_unconnected),
+        .mem_la_wdata   (mem_la_wdata_unconnected),
+        .mem_la_wstrb   (mem_la_wstrb_unconnected),
+        .pcpi_wr        (1'b0),
+        .pcpi_rd        (32'b0),
+        .pcpi_wait      (1'b0),
+        .pcpi_ready     (1'b0),
+        .pcpi_valid     (pcpi_valid_unconnected),
+        .pcpi_insn      (pcpi_insn_unconnected),
+        .pcpi_rs1       (pcpi_rs1_unconnected),
+        .pcpi_rs2       (pcpi_rs2_unconnected),
+        .eoi            (eoi_unconnected),
+        .trace_valid    (trace_valid_unconnected),
+        .trace_data     (trace_data_unconnected));
 
 
     assign leds = ~leds_data_o[5:0];

@@ -15,11 +15,11 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
     /* GW1NR-9 flash is 304 rows x 64 columns x 32 (4B) = 608Kb (76KB)
      * Cache of size 64B will fit 4 columns of word size, \
      * so we have 304 rows x 4 columns x 64B (16 words) */
-    /* flash memory cache - 2D array (8 entries x 16 words) */
+    /* flash memory cache - 2D array (8 sets x 16 words) */
     localparam 
-    C_ENTRIES = 8,
+    C_SETS = 8,
     C_WORDS = 16;
-    reg [31:0] cache_line [(C_ENTRIES-1):0][(C_WORDS-1):0];
+    reg [31:0] cache_line [(C_SETS-1):0][(C_WORDS-1):0];
     /* Address mapping to cache:
      * 1:0   (2b)  - word select of memory address (not passed on address bus of memory interface)
      * 7:2   (6b)  - column address
@@ -29,19 +29,20 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
     /* From above, address of ach word in memory is addressed with 15bits (9b of row address and 6b of col address)
      * When we use 64B sized cache, we store 16 words (16 columns) in cache line - so 4 lower bits of column address 
      * selects now column inside cache line and 2 upper bits goes to next address part.
-     * We have 8 entries no-way associative cache, so next 3 bits from address are used to select cache line.
-     * So we have 4bits for column select in cache line, 3bits for cache line entry select and we 8bits (15-4-3) for TAG purpose 
-     * Entry contain full cache line of 64B (16 columnx x 32bits), so we have to tag each entry to know what memory address is inside cache line */
+     * We have 8 set no-way associative cache, so next 3 bits from address are used to select cache line.
+     * So we have 4bits for column select in cache line, 3bits for cache line set select and we 8bits (15-4-3) for TAG purpose 
+     * Set contain full cache line of 64B (16 columnx x 32bits), so we have to tag each set to know what memory address is inside cache line */
 
     /* Cache TAG that contains upper address part of memory, which unambiguously connects address range with cache line 
      * Higest bit is also used to mark cache_line as valid - we have no information at startup if TAG of value 0 contains 
      * loaded cache lines, it just relates cache_line with the TAG part of address 
-     * CACHE_TAG = address[14:7], ENTRY = address[6:4], CACHE_LINE_COLUMN = address[3:0] */
-    reg [8:0] cache_tag [(C_ENTRIES-1):0];
+     * CACHE_TAG = address[14:7], CACHE_SET = address[6:4], CACHE_LINE_COLUMN = address[3:0] */
+    reg [8:0] cache_tag [(C_SETS-1):0];
 
     /* Invalidate cache tags */
+    integer i;
     initial begin
-        for (integer i = 0; i < C_ENTRIES; i = i + 1) begin
+        for (i = 0; i < C_SETS; i = i + 1) begin
             cache_tag[i] = 'd0; 
         end
     end
@@ -122,7 +123,7 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
                     xe <= 1'b0;
                     ye <= 1'b0;
                     cache_line[addr[6:4]][column] <= flash_data_o; /* Update data in cache line */
-                    column <= column + 'b1;
+                    column <= column + 5'b1;
                     state <= STATE_LOAD;
                 end
                 STATE_DONE: begin /* Go to STATE_IDLE, ready signal is asserted in this state */
