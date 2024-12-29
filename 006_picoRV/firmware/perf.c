@@ -5,6 +5,7 @@
 
 /* Led blink takes 4.6ns */
 /* With new user flash controller time decreased to 1.7ns */
+/* After added cache to new controller time decreased to 1.2ns */
 void perf_flash() {
 
     while(1) {
