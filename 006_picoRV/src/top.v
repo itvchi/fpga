@@ -110,7 +110,7 @@ module top (
         .data_o(systick_data_o),
         .irq(systick_irq));
 
-    user_flash flash (
+    user_flash_custom flash (
         .clk(clk),
         .reset_n(reset_n),
         .select(flash_sel),

@@ -1,3 +1,7 @@
+/* This module is only wrapper for gowin flash controller to access flash memory 
+ * with PicoRV32 native bus - code performance test shown that is almost 4x slower than 
+ * ececuting code from sram */
+
 module user_flash (
     input clk,
     input reset_n,

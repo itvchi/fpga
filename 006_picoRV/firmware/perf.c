@@ -4,6 +4,7 @@
 #define LEDS ((volatile unsigned char *) 0x80000000)
 
 /* Led blink takes 4.6ns */
+/* With new user flash controller time decreased to 1.7ns */
 void perf_flash() {
 
     while(1) {
