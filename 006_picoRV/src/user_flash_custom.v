@@ -6,7 +6,9 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
     input [14:0]  addr, // word address, 9-bits row, 6 bits col
     input [31:0]  data_i,
     output ready,
-    output reg [31:0] data_o
+    output reg [31:0] data_o,
+    output reg cache_hit,
+    output reg cache_miss
 );
 
     reg [14:0] flash_addr;
@@ -72,13 +74,17 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
 
     assign ready = (state == STATE_DONE);
 
-    always @(posedge clk or negedge reset_n) begin 
+    always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            cache_hit <= 1'b0;
+            cache_miss <= 1'b0;
             se <= 1'b0;
             xe <= 1'b0;
             ye <= 1'b0;
             state <= STATE_IDLE;
         end else begin
+            cache_hit <= 1'b0;
+            cache_miss <= 1'b0;
             xe <= 1'b0;
             ye <= 1'b0;
             se <= 1'b0;
@@ -92,11 +98,13 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
                                 cache_tag[{1'b1, addr[5:4]}][LAST_USED_BIT] <= 1'b0; /* and unmark this, what will cause override on next cache miss for this set */
                                 data_o <= cache_line[{1'b0, addr[5:4]}][addr[3:0]]; /* load data from cache_line */
                                 state <= STATE_DONE; /* Go through STATE_DONE to assert ready signal */
+                                cache_hit <= 1'b1;
                             end else if (cache_tag[{1'b1, addr[5:4]}][9:0] == {1'b1, addr[14:6]}) begin
                                 cache_tag[{1'b1, addr[5:4]}][LAST_USED_BIT] <= 1'b0;
                                 cache_tag[{1'b0, addr[5:4]}][LAST_USED_BIT] <= 1'b1;
                                 data_o <= cache_line[{1'b1, addr[5:4]}][addr[3:0]];
                                 state <= STATE_DONE;
+                                cache_hit <= 1'b1;
                             end else begin
                                 xe <= 1'b1;
                                 ye <= 1'b1;
@@ -107,6 +115,7 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
                                     cache_set <= 1'b0; /* Oposite from above */
                                 end
                                 state <= STATE_LOAD;
+                                cache_miss <= 1'b1;
                             end
                         end else begin /* Other operations than read are unsupported now */
                             state <= STATE_DONE; /* Go through STATE_DONE to assert ready signal */

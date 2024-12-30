@@ -1,7 +1,9 @@
 module top (
     input clk,
     input rst_btn_n,
-    output [5:0] leds);
+    output [5:0] leds,
+    output cache_hit,
+    output cache_miss);
     
     parameter BARREL_SHIFTER = 0;
     parameter ENABLE_MUL = 0;
@@ -118,7 +120,9 @@ module top (
         .addr(mem_addr[16:2]), // word address, 9-bits row, 6 bits col
         .data_i(mem_wdata),
         .ready(flash_ready),
-        .data_o(flash_data_o)
+        .data_o(flash_data_o),
+        .cache_hit(cache_hit),
+        .cache_miss(cache_miss)
     );
 
     wire trap_unconnected;
