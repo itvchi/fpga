@@ -12,6 +12,10 @@ end
 clock_divider #(
     .INPUT_CLOCK(27000000), 
     .OUTPUT_CLOCK(2)
+    /* Parameters for tb simulation:
+        .INPUT_CLOCK(25000000), 
+        .OUTPUT_CLOCK(250000)
+    */
 ) clk_div (
     .clk(clk), 
     .clk_en(clk_en));
