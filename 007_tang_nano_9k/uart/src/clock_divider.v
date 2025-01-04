@@ -5,7 +5,7 @@ module clock_divider #(
     input clk,
     output reg clk_en);
 
-localparam TICKS = (INPUT_CLOCK/(2*OUTPUT_CLOCK));
+localparam TICKS = (INPUT_CLOCK/OUTPUT_CLOCK);
 localparam BITS = $clog2(TICKS);
 
 reg [BITS-1:0] counter;

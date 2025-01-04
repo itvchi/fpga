@@ -3,14 +3,15 @@ module uart_rx (
     input clk_en,
     input rx,
     output reg [7:0] data,
-    output data_valid);
+    output reg data_valid);
 
 localparam 
 STATE_IDLE = 3'd0,
 STATE_START_BIT = 3'd1,
 STATE_READ = 3'd2,
 STATE_WAIT = 3'd3,
-STATE_STOP_BIT = 3'd4;
+STATE_STOP_BIT = 3'd4,
+STATE_STOP_BIT_WAIT = 3'd5;
 
 reg [3:0] state;
 reg [2:0] data_bit;
@@ -24,22 +25,27 @@ end
 
 /* UART receiver state machine */
 always @(posedge clk) begin
-    if (clk_en) begin
-        /* default assignments */
-        data_bit <= 3'd0;
+    /* default assignments */
+    data_valid <= 1'b0;
 
-        case (state)
-            STATE_IDLE: begin
-                if (rx == 1'b0) begin/* wait for start bit */
-                    state <= STATE_START_BIT;
-                end else begin
-                    state <= STATE_IDLE;
-                end
+    case (state)
+        STATE_IDLE: begin
+            if (rx == 1'b0 && clk_en) begin/* wait for start bit */
+                data_bit <= 3'd0;
+                state <= STATE_START_BIT;
+            end else begin
+                state <= STATE_IDLE;
             end
-            STATE_START_BIT: begin /* state for 1 clock delay */
+        end
+        STATE_START_BIT: begin /* state for 1 clock delay */
+            if (clk_en) begin
                 state <= STATE_READ;
+            end else begin
+                state <= STATE_START_BIT;
             end
-            STATE_READ: begin /* shift data bit to register */
+        end
+        STATE_READ: begin /* shift data bit to register */
+            if (clk_en) begin
                 fsm_data <= {rx, fsm_data[7:1]}; /* start append data at MSB, because first send bit is LSB and it will go to LSB at the end */
                 data_bit <= data_bit + 3'd1;
 
@@ -47,21 +53,33 @@ always @(posedge clk) begin
                     state <= STATE_STOP_BIT;
                 end else begin
                     state <= STATE_WAIT;
-                end
-            end
-            STATE_WAIT: begin /* wait 1 clock cycle */
+                end 
+            end else begin
                 state <= STATE_READ;
             end
-            STATE_STOP_BIT: begin
-                data <= fsm_data;
-                state <= STATE_IDLE;
+        end
+        STATE_WAIT: begin /* wait 1 clock cycle */
+            if (clk_en) begin
+                state <= STATE_READ;
+            end else begin
+                state <= STATE_WAIT;
             end
-            default: 
+        end
+        STATE_STOP_BIT: begin
+            data <= fsm_data;
+            data_valid <= 1'b1;
+            state <= STATE_STOP_BIT_WAIT;
+        end
+        STATE_STOP_BIT_WAIT: begin /* wait for second clk_en signal for stop bit */
+            if (clk_en) begin
                 state <= STATE_IDLE;
-        endcase
-    end
+            end else begin
+                state <= STATE_STOP_BIT_WAIT;
+            end
+        end
+        default: 
+            state <= STATE_IDLE;
+    endcase
 end
-
-assign data_valid = (state == STATE_STOP_BIT);
 
 endmodule

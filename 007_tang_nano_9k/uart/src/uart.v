@@ -7,7 +7,6 @@ module uart #(
     output tx);
 
 wire clk_en;
-reg clk_en_half;
 
 clock_divider #(
     .INPUT_CLOCK(INPUT_CLOCK), 
@@ -16,12 +15,7 @@ clk_div (
     .clk(clk), 
     .clk_en(clk_en));
 
-always @(posedge clk) begin 
-    if (clk_en) begin 
-        clk_en_half <= clk_en_half + 1'b1;
-    end
-end
-
+reg clk_counter;
 wire [7:0] data;
 wire data_valid;
 wire busy;
@@ -29,20 +23,30 @@ reg data_ready;
 reg start;
 
 initial begin
+    clk_counter <= 1'b0;
     data_ready <= 1'b0;
     start <= 1'b0;
 end
 
-always @(posedge clk) begin 
+wire clk_en_half;
+assign clk_en_half = clk_en && clk_counter;
+
+always @(posedge clk) begin
+    start <= 1'b0;
+    
+    if (clk_en) begin 
+        clk_counter <= clk_counter + 1'b1;
+    end else begin
+        clk_counter <= clk_counter;
+    end
+
     if (data_valid) begin 
         data_ready <= 1'b1;
     end
 
-
     if (clk_en_half && data_ready && !busy) begin
         start <= 1'b1;
-    end else begin
-        start <= 1'b0;
+        data_ready <= 1'b0;
     end
 end
 

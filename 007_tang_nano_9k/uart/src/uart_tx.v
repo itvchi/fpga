@@ -21,49 +21,54 @@ initial begin
     state <= STATE_IDLE;
     data_bit <= 3'd0;
     fsm_data <= 8'd0;
+    tx <= 1'b1;
 end
 
 
 
 //Transmitter block
 always @(posedge clk) begin
-    if (clk_en) begin
-        /* default assignments */
-        data_bit <= 1'b0;
-
-        case (state)
-            STATE_IDLE: begin
-                if(start == 1'b1) begin
-                    tx <= 1'b0;
-                    fsm_data <= data;
-                    state <= STATE_START_BIT;
-                end else begin
-                    state <= STATE_IDLE;
-                end
+    case (state)
+        STATE_IDLE: begin
+            if(start == 1'b1) begin
+                data_bit <= 1'b0;
+                fsm_data <= data;
+                state <= STATE_START_BIT;
+            end else begin
+                state <= STATE_IDLE;
             end
-            STATE_START_BIT: begin
-                tx <= fsm_data[data_bit];
-                data_bit <= data_bit + 3'd1;
+        end
+        STATE_START_BIT: begin
+            if (clk_en) begin
+                tx <= 1'b0;
                 state <= STATE_DATA_BIT;
+            end else begin
+                state <= STATE_START_BIT;
             end
-            STATE_DATA_BIT: begin
+        end
+        STATE_DATA_BIT: begin
+            state <= STATE_DATA_BIT;
+
+            if (clk_en) begin
                 tx <= fsm_data[data_bit];
                 data_bit <= data_bit + 3'd1;
 
                 if(data_bit == 3'd7) begin
                     state <= STATE_STOP_BIT;
-                end else begin
-                    state <= STATE_DATA_BIT;
                 end
             end
-            STATE_STOP_BIT: begin
+        end
+        STATE_STOP_BIT: begin
+            if (clk_en) begin
                 tx <= 1'b1;
                 state <= STATE_IDLE;
+            end else begin
+                state <= STATE_STOP_BIT;
             end
-            default:
-                state <= STATE_IDLE;
-        endcase
-    end
+        end
+        default:
+            state <= STATE_IDLE;
+    endcase
 end
 
 assign busy = (state != STATE_IDLE);
