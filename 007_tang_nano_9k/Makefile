@@ -1,7 +1,7 @@
 all:
 	@echo "Specify a project and sub-target, e.g., 'make led_counter'"
 
-PROJECTS := led_counter uart
+PROJECTS := led_counter uart uart_led_driver
 BUILDDIR := build
 
 led_counter:
@@ -31,5 +31,13 @@ uart_tb:
 uart_flash: uart
 	@echo "Flashing uart bitstream..."
 	openFPGALoader -b tangnano9k -f ./uart/impl/pnr/tang_nano_9k.fs
+
+uart_led_driver:
+	@echo "Building uart_led_driver bitstream..."
+	@echo "open_project ./uart_led_driver/tang_nano_9k.gprj\n run all" | gw_sh
+
+uart_led_driver_flash: uart_led_driver
+	@echo "Flashing uart_led_driver bitstream..."
+	openFPGALoader -b tangnano9k -f ./uart_led_driver/impl/pnr/tang_nano_9k.fs
 
 .PHONY: all $(PROJECTS) flash
