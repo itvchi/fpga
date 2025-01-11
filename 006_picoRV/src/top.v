@@ -2,6 +2,8 @@ module top (
     input clk,
     input rst_btn_n,
     output [5:0] leds,
+    input rx_gpio,
+    output tx_gpio,
     output cache_hit,
     output cache_miss);
     
@@ -27,19 +29,28 @@ module top (
     wire [3:0]  mem_wstrb;
     wire        mem_ready;
     wire        mem_instr;
+    wire        mem_valid;
+
     reg         leds_sel;
     wire        leds_ready;
     wire [31:0] leds_data_o;
+
     reg         sram_sel;
     wire        sram_ready;
     wire [31:0] sram_data_o;
+    
     reg         systick_sel;
     wire        systick_ready;
     wire [31:0] systick_data_o;
     wire        systick_irq;
+
     reg         flash_sel;
     wire [31:0] flash_data_o;
     wire        flash_ready;
+
+    reg         uart_sel;
+    wire        uart_ready;
+    wire [31:0] uart_data_o;
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
@@ -47,6 +58,7 @@ module top (
      * SRAM     00020000 - 00021fff
      * MM_LED   80000000
      * SYSTICK  80000100 - 80000110
+     * UART     80000200 - 80000220
     */
 
     always @(*) begin
@@ -54,6 +66,7 @@ module top (
         leds_sel <= 1'b0;               
         systick_sel <= 1'b0;
         flash_sel <= 1'b0;
+        uart_sel <= 1'b0;
 
         if (mem_valid) begin
             if (mem_addr < 32'h1_3000) begin
@@ -64,18 +77,21 @@ module top (
                 leds_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0100) && (mem_addr < 32'h8000_0110)) begin
                 systick_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h8000_0200) && (mem_addr < 32'h8000_0220)) begin
+                uart_sel <= 1'b1;
             end
         end
     end
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready | flash_ready);
+    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready | flash_ready | uart_ready);
 
     /* mem_rdata bus multiplexer */
     assign mem_rdata = sram_sel ? sram_data_o :
                         leds_sel ? leds_data_o :
                         systick_sel ? systick_data_o :
-                        flash_sel  ? flash_data_o : 32'h0;
+                        flash_sel ? flash_data_o : 
+                        uart_sel ? uart_data_o : 32'h0;
 
     reset_control reset_controller (
         .clk(clk),
@@ -122,8 +138,19 @@ module top (
         .ready(flash_ready),
         .data_o(flash_data_o),
         .cache_hit(cache_hit),
-        .cache_miss(cache_miss)
-    );
+        .cache_miss(cache_miss));
+
+    uart uart_periph (
+        .clk(clk),
+        .reset_n(reset_n),
+        .select(uart_sel),
+        .wstrb(mem_wstrb),
+        .addr(mem_addr[4:0]),
+        .data_i(mem_wdata),
+        .ready(uart_ready),
+        .data_o(uart_data_o),
+        .rx(rx_gpio),
+        .tx(tx_gpio));
 
     wire trap_unconnected;
     wire mem_la_read_unconnected;

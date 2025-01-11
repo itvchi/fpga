@@ -7,6 +7,10 @@
 //Device Version: C
 //Created Time: Mon 12 30 22:30:37 2024
 
+IO_LOC  "tx_gpio" 48;
+IO_PORT "tx_gpio" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "rx_gpio" 49;
+IO_PORT "rx_gpio" IO_TYPE=LVCMOS33 PULL_MODE=UP;
 IO_LOC "cache_miss" 32;
 IO_PORT "cache_miss" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
 IO_LOC "cache_hit" 31;
