@@ -84,7 +84,9 @@ module uart_tb ();
         write(32'h80000200, 32'h00000002); /* enable */
         #20
         write(32'h80000210, {24'd0, "a"}); /* tx_data = "a" */
-        #1000
+        #600
+        write(32'h80000210, {24'd0, "e"}); /* tx_data = "a" */
+        #600
 
         $finish();
     end

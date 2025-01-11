@@ -8,7 +8,9 @@ module uart (
     output reg ready,
     output reg [31:0] data_o,
     input rx,
-    output tx);
+    output tx,
+    output reg irq_rx,
+    output reg irq_tx);
 
 reg [31:0]      r_config;       /* offset: 0x00  RW */
 reg [31:0]      r_baud_presc;   /* offset: 0x04  RW */
@@ -18,6 +20,8 @@ reg [7:0]       r_tx_data;      /* offset: 0x10  W  */
 
 wire            config_reset = r_config[0];
 wire            config_enable = r_config[1];
+wire            config_rx_irq = r_config[2];
+wire            config_tx_irq = r_config[3];
 wire            status_rx_valid = r_status[0];
 wire            status_tx_done = r_status[1];
 
@@ -30,6 +34,7 @@ wire data_valid;
 reg new_tx_data;
 reg start;
 wire busy;
+wire tx_done;
 
 initial begin
     r_config <= 32'd0;
@@ -38,6 +43,8 @@ initial begin
     r_rx_data <= 8'd0;
     r_tx_data <= 8'd0;
     baud_enable <= 1'b0;
+    irq_rx <= 1'b0;
+    irq_tx <= 1'b0;
 end
 
 always @(posedge clk or negedge reset_n) begin
@@ -47,6 +54,8 @@ always @(posedge clk or negedge reset_n) begin
         r_status <= 32'd0;
         r_rx_data <= 8'd0;
         r_tx_data <= 8'd0;
+        irq_rx <= 1'b0;
+        irq_tx <= 1'b0;
         ready <= 1'b0;
     end else begin
         ready <= 1'b0;
@@ -82,6 +91,8 @@ always @(posedge clk or negedge reset_n) begin
             r_status <= 32'd0;
             r_rx_data <= 32'd0;
             r_tx_data <= 32'd0;
+            irq_rx <= 1'b0;
+            irq_tx <= 1'b0;
         end else if (config_enable) begin
             /* Enable baud_generator, when r_baud_presc is != 0 */
             if (r_baud_presc) begin
@@ -102,6 +113,7 @@ always @(posedge clk or negedge reset_n) begin
                 r_status[1] <= 1'b0;
             end
 
+            /* Handle start pulse on data write to tx register */
             if (new_tx_data) begin
                 uart_tx_data <= r_tx_data;
                 start <= 1'b1;
@@ -110,6 +122,12 @@ always @(posedge clk or negedge reset_n) begin
                 start <= 1'b0;
             end
 
+            /* Pass tx_done signal outside as interrupt if enabled */
+            if (config_tx_irq) begin
+                irq_tx <= tx_done;
+            end else begin
+                irq_tx <= 1'b0;
+            end
         end
     end
 end
@@ -153,7 +171,8 @@ uart_tx serial_tx (
     .start(start),
     .data(uart_tx_data),
     .tx(tx),
-    .busy(busy));
+    .busy(busy),
+    .tx_done(tx_done));
 
 endmodule
 
@@ -288,7 +307,8 @@ module uart_tx (
     input start,
     input [7:0] data,
     output reg tx,
-    output busy);
+    output busy,
+    output reg tx_done);
 
     localparam 
     STATE_IDLE = 3'd0,
@@ -306,10 +326,13 @@ module uart_tx (
         data_bit <= 3'd0;
         fsm_data <= 8'd0;
         tx <= 1'b1;
+        tx_done <= 1'b0;
     end
 
     //Transmitter block
     always @(posedge clk) begin
+        tx_done <= 1'b0;
+
         case (state)
             STATE_IDLE: begin
                 if(start == 1'b1) begin
@@ -343,6 +366,7 @@ module uart_tx (
             STATE_STOP_BIT: begin
                 if (clk_en) begin
                     tx <= 1'b1;
+                    tx_done <= 1'b1;
                     state <= STATE_IDLE;
                 end else begin
                     state <= STATE_STOP_BIT;

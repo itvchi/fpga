@@ -35,7 +35,7 @@ int main() {
     systick_init_irq(0, F_CPU/10);
 
     uart_init(F_CPU / (2 * BAUDRATE));
-    uart_print("Hello world!\r\n");
+    uart_print_irq("Hello world!\r\n");
 
     while (1) {
         uart_print("x\r\n");

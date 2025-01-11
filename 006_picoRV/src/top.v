@@ -51,6 +51,8 @@ module top (
     reg         uart_sel;
     wire        uart_ready;
     wire [31:0] uart_data_o;
+    wire        uart_rx_irq;
+    wire        uart_tx_irq;
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
@@ -150,7 +152,9 @@ module top (
         .ready(uart_ready),
         .data_o(uart_data_o),
         .rx(rx_gpio),
-        .tx(tx_gpio));
+        .tx(tx_gpio),
+        .irq_rx(uart_rx_irq),
+        .irq_tx(uart_tx_irq));
 
     wire trap_unconnected;
     wire mem_la_read_unconnected;
@@ -189,7 +193,7 @@ module top (
         .mem_wdata   (mem_wdata),
         .mem_wstrb   (mem_wstrb),
         .mem_rdata   (mem_rdata),
-        .irq         ({28'b0, systick_irq, 3'b0}),
+        .irq         ({26'b0, uart_tx_irq, uart_rx_irq, systick_irq, 3'b0}),
         .trap           (trap_unconnected),
         .mem_la_read    (mem_la_read_unconnected),
         .mem_la_write   (mem_la_write_unconnected),
