@@ -5,6 +5,7 @@
 
 void uart_init(uint32_t baudrate_prescaler); /* baudrate_prescaler = clock_frequency / (2 * baudrate) */
 void uart_put(char byte);
+char uart_get();
 void uart_print(char *str);
 void uart_print_irq(char *buffer);
 

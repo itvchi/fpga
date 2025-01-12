@@ -103,6 +103,7 @@ always @(posedge clk or negedge reset_n) begin
 
             /* Set rx data ready bit in r_status register - set by hardware, reset by software */
             if (data_valid) begin 
+                r_rx_data <= uart_rx_data;
                 r_status[0] <= 1'b1;
             end
 

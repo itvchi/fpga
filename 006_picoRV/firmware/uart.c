@@ -46,20 +46,31 @@ void uart_init(uint32_t baudrate_prescaler) {
 
 void uart_put(char byte) {
 
+    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
     UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
 
-    if (!status->tx_busy) {
-        UART->TX_DATA = byte;
-    }
+    while (status->tx_busy || config->irq_tx);
+    UART->TX_DATA = byte;
+}
+
+char uart_get() {
+
+    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
+
+    while (!status->rx_valid);
+    status->rx_valid = 0;
+
+    return UART->RX_DATA;
 }
 
 void uart_print(char *str) {
 
+    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
     UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
 
     while (*str) {
-        while (status->tx_busy);
-        uart_put(*str);
+        while (status->tx_busy || config->irq_tx);
+        UART->TX_DATA = *str;
         str++;
     }
 }
@@ -87,7 +98,7 @@ void uart_print_irq(char *buffer) {
     UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
     UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
 
-    while (status->tx_busy); /* Wait until previous data was send */
+    while (status->tx_busy || config->irq_tx); /* Wait until previous data was send or irq mode still enabled */
     if (buffer[0]) {
         config->irq_tx = 1; /* Enable tx irq */
         irq_tx_buffer = &buffer[0];

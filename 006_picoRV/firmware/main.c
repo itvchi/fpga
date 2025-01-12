@@ -29,7 +29,7 @@ int main() {
     // perf_flash();
     // perf_ram();
 
-    int counter = 0;
+    char character;
 
     systick_add_event(led_action, (void*)&leds, SYSTICK_PRIO_HIGH, 2);
     systick_init_irq(0, F_CPU/10);
@@ -38,11 +38,11 @@ int main() {
     uart_print_irq("Hello world!\r\n");
 
     while (1) {
-        uart_print("x\r\n");
-        leds ^= 0b100000;
-        set_leds(leds);
-        delay();
-        counter++;
+        uart_print_irq("Press any key\r\n");
+        character = uart_get();
+        uart_print_irq("\rYou pressed: ");
+        uart_put(character);
+        uart_print_irq("\r\n");
     }
 
     return 0;

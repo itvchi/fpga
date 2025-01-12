@@ -13,8 +13,7 @@ module uart_tb ();
     wire select;
     wire ready;
     wire [31:0] rdata;
-    reg rx;
-    wire tx;
+    wire rx_tx_loopback;
 
     /* DUT instantiation */
     uart DUT (
@@ -26,8 +25,8 @@ module uart_tb ();
         .data_i(wdata),
         .ready(ready),
         .data_o(rdata),
-        .rx(rx),
-        .tx(tx));
+        .rx(rx_tx_loopback),
+        .tx(rx_tx_loopback));
 
     /* Generate clock signal */
     initial begin
@@ -86,6 +85,7 @@ module uart_tb ();
         write(32'h80000210, {24'd0, "a"}); /* tx_data = "a" */
         #600
         write(32'h80000210, {24'd0, "e"}); /* tx_data = "a" */
+        #600
         #600
 
         $finish();
