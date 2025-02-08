@@ -28,6 +28,12 @@ uart_tb:
 	cd uart/src && iverilog -o ../$(BUILDDIR)/$@.vvp $@.v
 	cd uart/$(BUILDDIR) && vvp $@.vvp
 
+uart_tx_tb:
+	@echo "Creating uart_tx_tb simulation..."
+	mkdir -p uart/$(BUILDDIR)
+	cd uart/src && iverilog -o ../$(BUILDDIR)/$@.vvp $@.v
+	cd uart/$(BUILDDIR) && vvp $@.vvp
+
 uart_flash: uart
 	@echo "Flashing uart bitstream..."
 	openFPGALoader -b tangnano9k -f ./uart/impl/pnr/tang_nano_9k.fs
