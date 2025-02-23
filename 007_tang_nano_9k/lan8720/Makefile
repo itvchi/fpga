@@ -8,7 +8,7 @@ lan8720_tb: $(TB)
 
 $(FS): $(SRCS)
 	@echo "Building lan8720 bitstream..."
-	@echo "open_project ./tang_nano_9k.gprj\n run all" | gw_sh
+	@echo "open_project ./tang_nano_9k.gprj\n set_option -top_module top\n run all" | gw_sh
 
 $(TB): $(SRCS) | build_dir
 	@echo "Creating lan8720 simulation..."

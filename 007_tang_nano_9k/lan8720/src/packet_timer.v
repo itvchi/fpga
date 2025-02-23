@@ -4,7 +4,7 @@ module packet_timer(
     output packet_enable
 );
 
-localparam PACKET_TIMER_MAX = 5000000; //100ms
+localparam PACKET_TIMER_MAX = 50000000; //1s
 
 reg [31:0] packet_timer;
 
