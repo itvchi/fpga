@@ -2,6 +2,8 @@
 `include "top.v"
 `include "producer.v"
 `include "fifo.v"
+`include "fifo2stream.v"
+`include "consumer.v"
 
 module top_tb();
 
@@ -23,7 +25,7 @@ initial begin
     $dumpvars(0, top_tb);
     #5;
     rst_n <= 1'b1;
-    #400;
+    #4000;
 
     $finish;
 end
