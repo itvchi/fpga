@@ -1,7 +1,8 @@
 all:
 	@echo "Specify a project and sub-target, e.g., 'make led_counter'"
 
-PROJECTS := led_counter uart uart_led_driver lan8720
+PROJECTS := led_counter uart uart_led_driver lan8720 lcd_rgb
+
 TESTBENCHES := $(addsuffix _tb, $(PROJECTS))
 FLASH := $(addsuffix _flash, $(PROJECTS))
 
