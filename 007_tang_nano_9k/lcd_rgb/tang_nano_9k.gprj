@@ -10,5 +10,6 @@
         <File path="src/top.v" type="file.verilog" enable="1"/>
         <File path="src/lcd_rgb.v" type="file.verilog" enable="1"/>
         <File path="src/pattern_generator.v" type="file.verilog" enable="1"/>
+        <File path="src/pixel_generator.v" type="file.verilog" enable="1"/>
     </FileList>
 </Project>

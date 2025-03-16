@@ -1,5 +1,6 @@
 `timescale 10ns/1ns
 `include "lcd_rgb.v"
+`include "pixel_generator.v"
 
 module lcd_rgb_tb();
 
@@ -41,7 +42,15 @@ initial begin
     $dumpfile("lcd_rgb_tb.vcd");
     $dumpvars(0, lcd_rgb_tb);
 
-    #100000;
+    /* Optional delay before first lcd_de assertion, which helps finding valid signals after front porch */
+    #100;
+    $dumpoff();
+    while (!lcd_de) begin
+        @(posedge clk);
+    end
+    $dumpon();
+
+    #300000;
     $finish();
 end
 

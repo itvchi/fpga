@@ -1,7 +1,4 @@
-module lcd_rgb #(
-    parameter CLK_FREQ = 27000000,
-    parameter SPI_FREQ =  6750000
-) (
+module lcd_rgb (
     input clk,
     input rst_n,
     output [7:0] red,
@@ -13,12 +10,14 @@ module lcd_rgb #(
     output hsync);
 
 `ifdef SIM
+    /* 64x32px */ 
     localparam 
-    TOTAL_HORIZONTAL = 10'd50,
-    TOTAL_VERTICAL = 10'd30,
+    TOTAL_HORIZONTAL = 10'd69,
+    TOTAL_VERTICAL = 10'd35,
     HORIZONTAL_BLANKING = 10'd5,
     VERTICAL_BLANKING = 10'd3;
 `else
+    /* 480x272px */ 
     localparam 
     TOTAL_HORIZONTAL = 10'd525,
     TOTAL_VERTICAL = 10'd290,
@@ -26,8 +25,11 @@ module lcd_rgb #(
     VERTICAL_BLANKING = 10'd18;
 `endif
 
-localparam integer CLK_DIV = (CLK_FREQ / (SPI_FREQ * 2));
-
+localparam integer CLK_DIV = 5;
+/* For pixel_generator pipeline clk should have at least 4 clock cycles between falling and rising edge of lcd_dclk
+    (what is equal to clock division of clk_en signal, but safer option will be 5 clock cycles between edges) 
+    -> during simulation i do not care about lcd_dclk frequency (which should be 8-12MHz)
+    -> during tests on hardware i see that lcd works properly even on lower lcd_dclk frequency */
 
 reg [31:0] clk_counter;
 reg clk_en;
@@ -39,7 +41,6 @@ reg [8:0] v_counter;
 
 wire [9:0] pos_x;
 wire [8:0] pos_y;
-
 
 /* Generate clk_en signal */
 always @(posedge clk) begin
@@ -76,7 +77,8 @@ always @(posedge clk) begin
         h_counter <= 10'd0;
         v_counter <= 9'd0;
         pattern_counter <= 12'd0;
-    end else if (clk_en & !o_clk) begin
+    end else if (clk_en & o_clk) begin
+        /* Update counterf on falling edge of dclk, to have nex pos_xy before latching edge (rising) */
         if (h_counter == TOTAL_HORIZONTAL-1) begin
             h_counter <= 10'd0;
             if(v_counter == TOTAL_VERTICAL-1) begin
@@ -101,8 +103,17 @@ assign pos_x = (h_counter < HORIZONTAL_BLANKING) ? 10'd0 : (h_counter - HORIZONT
 assign pos_y = (v_counter < VERTICAL_BLANKING) ? 9'd0 : (v_counter - VERTICAL_BLANKING);
 
 /* Drive rgb outputs */
-pattern_generator pg (
-    .pattern(pattern_counter[8:7]),
+// pattern_generator pg (
+//     .pattern(pattern_counter[8:7]),
+//     .pos_x(pos_x),
+//     .pos_y(pos_y),
+//     .red(red),
+//     .green(green),
+//     .blue(blue));
+
+pixel_generator pg (
+    .clk(clk),
+    .rst_n(rst_n),
     .pos_x(pos_x),
     .pos_y(pos_y),
     .red(red),
