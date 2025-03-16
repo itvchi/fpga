@@ -103,21 +103,31 @@ assign pos_x = (h_counter < HORIZONTAL_BLANKING) ? 10'd0 : (h_counter - HORIZONT
 assign pos_y = (v_counter < VERTICAL_BLANKING) ? 9'd0 : (v_counter - VERTICAL_BLANKING);
 
 /* Drive rgb outputs */
-// pattern_generator pg (
-//     .pattern(pattern_counter[8:7]),
-//     .pos_x(pos_x),
-//     .pos_y(pos_y),
-//     .red(red),
-//     .green(green),
-//     .blue(blue));
+wire [7:0] red_data;
+wire [7:0] green_data;
+wire [7:0] blue_data;
 
-pixel_generator pg (
+pattern_generator pattern_gen (
+    .pattern(pattern_counter[8:7]),
+    .pos_x(pos_x),
+    .pos_y(pos_y),
+    .red(red_data),
+    .green(green_data),
+    .blue(blue_data));
+
+/* Generate characters pixel_data */
+wire pixel_data;
+
+pixel_generator pixel_gen (
     .clk(clk),
     .rst_n(rst_n),
     .pos_x(pos_x),
     .pos_y(pos_y),
-    .red(red),
-    .green(green),
-    .blue(blue));
+    .pixel_data(pixel_data));
+
+/* Display background data or black pixel of character */
+assign red = pixel_data ? 8'h00 : red_data;
+assign green = pixel_data ? 8'h00 : green_data;
+assign blue = pixel_data ? 8'h00 : blue_data;
 
 endmodule

@@ -3,9 +3,7 @@ module pixel_generator(
     input rst_n,
     input [9:0] pos_x,
     input [8:0] pos_y,
-    output [7:0] red,
-    output [7:0] green,
-    output [7:0] blue);
+    output pixel_data);
 
 `ifdef SIM
     localparam
@@ -74,9 +72,6 @@ always @(posedge clk) begin
     end
 end
 
-/* Display white or black pixel */
-assign red = pixel_value ? 8'hFF : 8'h00;
-assign green = pixel_value ? 8'hFF : 8'h00;
-assign blue = pixel_value ? 8'hFF : 8'h00;
+assign pixel_data = pixel_value;
 
 endmodule
