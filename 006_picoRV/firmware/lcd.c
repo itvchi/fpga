@@ -1,7 +1,7 @@
 #include "lcd.h"
 #include <stddef.h>
 
-#define LCD ((unsigned int *) 0x80001000)
+#define LCD ((unsigned char *) 0x80001000)
 #define SCREEN_WIDTH    60
 #define SCREEN_HEIGHT   17
 #define SCREEN_SIZE     (SCREEN_WIDTH * SCREEN_HEIGHT)
@@ -11,7 +11,7 @@ unsigned int global_x, global_y;
 
 void lcd_clear() {
 
-    unsigned int *screen = LCD;
+    unsigned char *screen = LCD;
 
     for (size_t index = 0; index < SCREEN_SIZE; index++) {
         screen[index] = 0x00;
@@ -66,7 +66,7 @@ static void lcd_write_char(char *ch, unsigned int x, unsigned int y) {
 
 static void lcd_write_char_idx(char *ch, unsigned int index) {
 
-    unsigned int *screen = LCD;
+    unsigned char *screen = LCD;
 
     if (index < SCREEN_SIZE) {
         if (*ch < 0x20 || *ch > 0x7E) {
@@ -76,3 +76,8 @@ static void lcd_write_char_idx(char *ch, unsigned int index) {
         }
     }
 }
+
+/* Note:
+Change in memory access organisation from word to byte allow to map character buffer
+on LCD memory addresses (but need hardware conversion and character range checking) 
+and frees not used bytes from addess space (change from 1020 word to 1020 bytes) */

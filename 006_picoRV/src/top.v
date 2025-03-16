@@ -73,7 +73,7 @@ module top (
      * MM_LED   80000000
      * SYSTICK  80000100 - 80000110
      * UART     80000200 - 80000220
-     * LCD_RGB  80001000 - 80002000 (1020 words - 60x17 screen)
+     * LCD_RGB  80001000 - 80001400 (1020 bytes - 60x17 screen)
     */
 
     always @(*) begin
@@ -95,7 +95,7 @@ module top (
                 systick_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0200) && (mem_addr < 32'h8000_0220)) begin
                 uart_sel <= 1'b1;
-            end else if ((mem_addr >= 32'h8000_1000) && (mem_addr < 32'h8000_2000)) begin
+            end else if ((mem_addr >= 32'h8000_1000) && (mem_addr < 32'h8000_1400)) begin
                 lcd_rgb_sel <= 1'b1;
             end
         end

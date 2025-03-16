@@ -1,6 +1,7 @@
 `timescale 10ns/1ns
 `include "lcd_rgb.v"
 `include "pixel_generator.v"
+`include "pattern_generator.v"
 
 module lcd_rgb_tb();
 

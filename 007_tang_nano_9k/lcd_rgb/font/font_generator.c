@@ -48,9 +48,13 @@ int main(int argc, char const *argv[]) {
     unsigned int cr = 0;
     fptr = fopen("screen.hex", "w");
     for (height = 0; height < 17; height++) {
-        for (width = 0; width < 60; width++) {
-            fprintf(fptr, "%02x\n", cr);
-            cr = (cr + 1) % 90;
+        for (width = 0; width < 60; width += 4) {
+            cr = (cr + 4) % 90;
+            fprintf(fptr, "%02x", (cr + 89) % 90);
+            fprintf(fptr, "%02x", (cr + 88) % 90);
+            fprintf(fptr, "%02x", (cr + 87) % 90);
+            fprintf(fptr, "%02x", (cr + 86) % 90);
+            fprintf(fptr, "\n");
         }
     }
     

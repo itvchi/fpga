@@ -28,7 +28,8 @@ CHAR_ROWS = SCREEN_HEIGHT / FONT_HEIGHT;
 reg [7:0] font_memory [0:(95*16-1)];
 
 /* Screen buffer - stores displayed character for each field of size FONT_WIDTH * FONT_HEIGHT */
-reg [6:0] screen_memory [0:(CHAR_COLUMNS * CHAR_ROWS - 1)];
+/* Changed layout - grouped characters into fours (additional 8th bit is for color, but not used) */
+reg [31:0] screen_memory [0:((CHAR_COLUMNS * CHAR_ROWS) / 4 - 1)];
 
 
 initial begin
@@ -52,6 +53,8 @@ assign screen_y = pos_y[8:4];
 reg pixel_value;
 
 reg [31:0] offset;
+wire [31:0] mem_cell;
+wire [31:0] mem_bus_upper_bit;
 reg [31:0] font_offset;
 reg [31:0] character;
 
@@ -66,11 +69,14 @@ always @(posedge clk) begin
         pixel_value <= 1'b0;
     end else begin
         offset <= screen_y * CHAR_COLUMNS + screen_x;
-        character <= screen_memory[offset];
-        font_offset <= character * 16 + char_y;
+        character <= screen_memory[offset[31:2]][{offset[1:0], 3'b110} -: 7];
+        font_offset <= {character[31:0], 4'h0} + char_y;
         pixel_value <= font_memory[font_offset][char_x];
     end
 end
+
+assign mem_cell = offset[31:2];
+assign mem_bus_upper_bit = {offset[1:0], 3'b110};
 
 assign pixel_data = pixel_value;
 

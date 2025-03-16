@@ -165,12 +165,14 @@ CHAR_ROWS = SCREEN_HEIGHT / FONT_HEIGHT;
 reg [7:0] font_memory [0:(95*16-1)];
 
 /* Screen buffer - stores displayed character for each field of size FONT_WIDTH * FONT_HEIGHT */
-reg [6:0] screen_memory [0:(CHAR_COLUMNS * CHAR_ROWS - 1)];
+/* Changed memory layout fo full word, for better interface with system bus 
+    (and changed size of one entry from 7 to 8 bits - additional bit for font color selection, 
+    which will be used with background) */
+reg [31:0] screen_memory [0:(CHAR_COLUMNS * CHAR_ROWS / 4 - 1)];
 
 
 initial begin
     $readmemh("../font/ascii.hex", font_memory);
-    $readmemh("../font/screen.hex", screen_memory);
 end
 
 /* Position inside character field */
@@ -203,7 +205,9 @@ always @(posedge clk) begin
         pixel_value <= 1'b0;
     end else begin
         offset <= screen_y * CHAR_COLUMNS + screen_x;
-        character <= screen_memory[offset];
+        /* Screen_memory cell (modulo 4 of offset) and byte (offset lower bits+1 * 8, then -2, which is same as 
+            offset lower bits * 8 + 6 - the operation is for range and omitt color bit and take 7 bit of data) selection */
+        character <= screen_memory[offset[31:2]][{offset[1:0], 3'b110} -: 7];
         font_offset <= {character[31:0], 4'h0} + char_y; /* Same as *16, but saved 4 registers */
         pixel_value <= font_memory[font_offset][char_x];
     end
@@ -227,8 +231,19 @@ reg [6:0] mem_data;
                 if (wstrb == 'd0) begin
                     data_o <= 32'd0;
                 end else begin
-                    if (addr[11:2] < (CHAR_COLUMNS * CHAR_ROWS - 1)) begin
-                        screen_memory[addr[11:2]] <= data_i[6:0];
+                    if (addr[11:2] < (CHAR_COLUMNS * CHAR_ROWS / 4 - 1)) begin
+                        if (wstrb[0]) begin
+                            screen_memory[addr[11:2]][7:0] <= data_i[7:0];
+                        end
+                        if (wstrb[1]) begin
+                            screen_memory[addr[11:2]][15:8] <= data_i[15:8];
+                        end
+                        if (wstrb[2]) begin
+                            screen_memory[addr[11:2]][23:16] <= data_i[23:16];
+                        end
+                        if (wstrb[3]) begin
+                            screen_memory[addr[11:2]][31:24] <= data_i[31:24];
+                        end
                     end
                 end
                 ready <= 1'b1;
