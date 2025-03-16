@@ -13,6 +13,7 @@
         <File path="src/sram.v" type="file.verilog" enable="1"/>
         <File path="src/systick.v" type="file.verilog" enable="1"/>
         <File path="src/top.v" type="file.verilog" enable="1"/>
+        <File path="src/lcd_rgb.v" type="file.verilog" enable="1"/>
         <File path="src/uart.v" type="file.verilog" enable="1"/>
         <File path="src/user_flash.v" type="file.verilog" enable="1"/>
         <File path="src/user_flash_custom.v" type="file.verilog" enable="1"/>

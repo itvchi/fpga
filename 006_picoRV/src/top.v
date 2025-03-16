@@ -5,7 +5,15 @@ module top (
     input rx_gpio,
     output tx_gpio,
     output cache_hit,
-    output cache_miss);
+    output cache_miss,
+/* LCD interface */
+    output [4:0] lcd_red,
+    output [5:0] lcd_green,
+    output [4:0] lcd_blue,
+    output lcd_dclk,
+    output lcd_de,
+    output lcd_vsync,
+    output lcd_hsync);
     
     parameter BARREL_SHIFTER = 0;
     parameter ENABLE_MUL = 0;
@@ -54,6 +62,10 @@ module top (
     wire        uart_rx_irq;
     wire        uart_tx_irq;
 
+    reg         lcd_rgb_sel;
+    wire        lcd_rgb_ready;
+    wire [31:0] lcd_rgb_data_o;
+
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
      * FLASH    00000000 - 00012fff
@@ -61,6 +73,7 @@ module top (
      * MM_LED   80000000
      * SYSTICK  80000100 - 80000110
      * UART     80000200 - 80000220
+     * LCD_RGB  80001000 - 80002000 (1020 words - 60x17 screen)
     */
 
     always @(*) begin
@@ -69,6 +82,7 @@ module top (
         systick_sel <= 1'b0;
         flash_sel <= 1'b0;
         uart_sel <= 1'b0;
+        lcd_rgb_sel <= 1'b0;
 
         if (mem_valid) begin
             if (mem_addr < 32'h1_3000) begin
@@ -81,19 +95,22 @@ module top (
                 systick_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0200) && (mem_addr < 32'h8000_0220)) begin
                 uart_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h8000_1000) && (mem_addr < 32'h8000_2000)) begin
+                lcd_rgb_sel <= 1'b1;
             end
         end
     end
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready | flash_ready | uart_ready);
+    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready | flash_ready | uart_ready | lcd_rgb_ready);
 
     /* mem_rdata bus multiplexer */
     assign mem_rdata = sram_sel ? sram_data_o :
                         leds_sel ? leds_data_o :
                         systick_sel ? systick_data_o :
                         flash_sel ? flash_data_o : 
-                        uart_sel ? uart_data_o : 32'h0;
+                        uart_sel ? uart_data_o : 
+                        lcd_rgb_sel ? lcd_rgb_data_o : 32'h0;
 
     reset_control reset_controller (
         .clk(clk),
@@ -155,6 +172,34 @@ module top (
         .tx(tx_gpio),
         .irq_rx(uart_rx_irq),
         .irq_tx(uart_tx_irq));
+
+    wire [7:0] red;
+    wire [7:0] green;
+    wire [7:0] blue;
+
+    lcd_rgb lcd (
+        .clk(clk),
+        .reset_n(reset_n),
+        .select(lcd_rgb_sel),
+        .wstrb(mem_wstrb),
+        .addr(mem_addr[11:0]),
+        .data_i(mem_wdata),
+        .ready(lcd_rgb_ready),
+        .data_o(lcd_rgb_data_o),
+        .red(red),
+        .green(green),
+        .blue(blue), 
+        .dclk(lcd_dclk),
+        .de(lcd_de));
+
+    assign lcd_red = red[7 -: 5];
+    assign lcd_green = green[7 -: 6];
+    assign lcd_blue = blue[7 -: 5];
+
+    /* Use DE mode - hsync and vsync tied to ground */
+    assign lcd_hsync = 0;
+    assign lcd_vsync = 0;
+
 
     wire trap_unconnected;
     wire mem_la_read_unconnected;

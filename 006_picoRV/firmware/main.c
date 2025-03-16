@@ -3,6 +3,7 @@
 #include "irq.h"
 #include "perf.h"
 #include "uart.h"
+#include "lcd.h"
 
 #define F_CPU       27000000
 #define BAUDRATE    115200
@@ -36,6 +37,11 @@ int main() {
 
     uart_init(F_CPU / (2 * BAUDRATE));
     uart_print_irq("Hello world!\r\n");
+
+    lcd_clear();
+    lcd_write_str("Hello world!!!");
+    lcd_write_str_xy("This is wrapped line ->\r this should be at front", 30, 3);
+    lcd_write_str_xy("This is first line\n And this should be line below", 0, 6);
 
     while (1) {
         uart_print_irq("Press any key\r\n");
