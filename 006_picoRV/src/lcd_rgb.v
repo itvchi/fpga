@@ -2,16 +2,17 @@ module lcd_rgb (
     input clk,
     input reset_n,
     /* Bus interface */
-    input select,
+    input ascii_select,
+    input rgb_select,
     input [3:0] wstrb,
-    input [9:0] addr,
+    input [11:0] addr,
     input [31:0] data_i,
     output ready,
     output [31:0] data_o,
     /* Lcd interface */
-    output [7:0] red,
-    output [7:0] green,
-    output [7:0] blue, 
+    output reg [7:0] red,
+    output reg [7:0] green,
+    output reg [7:0] blue, 
     output dclk,
     output de);
 
@@ -27,23 +28,55 @@ lcd display(
     .pos_x(pos_x),
     .pos_y(pos_y));
 
+wire ascii_ready;
+wire [31:0] ascii_data_o;
+wire rgb_ready;
+wire [31:0] rgb_data_o;
+
 lcd_ascii_memory display_ascii_memory(
     .clk(clk),
     .rst_n(reset_n),
-    .select(select),
+    .select(ascii_select),
     .wstrb(wstrb),
-    .addr(addr),
+    .addr(addr[9:0]),
     .data_i(data_i),
-    .ready(ready),
-    .data_o(data_o),
+    .ready(ascii_ready),
+    .data_o(ascii_data_o),
     .pos_x(pos_x),
     .pos_y(pos_y),
     .pixel_data(pixel_data));
 
+wire [7:0] red_data;
+wire [7:0] green_data;
+wire [7:0] blue_data;
+
+lcd_rgb_memory display_rgb_memory (
+    .clk(clk),
+    .rst_n(reset_n),
+    .select(rgb_select),
+    .wstrb(wstrb),
+    .addr(addr[11:0]),
+    .data_i(data_i),
+    .ready(rgb_ready),
+    .data_o(rgb_data_o),
+    .pos_x(pos_x),
+    .pos_y(pos_y),
+    .red_data(red_data),
+    .green_data(green_data),
+    .blue_data(blue_data));
+
+assign ready = ascii_select ? ascii_ready : 
+                rgb_select ? rgb_ready : 1'b0;
+
+assign data_o = ascii_select ? ascii_data_o :
+                rgb_select ? rgb_data_o : 32'd0;
+
 /* Display background data or black pixel of character */
-assign red = pixel_data ? 8'hFF : 8'h00;
-assign green = pixel_data ? 8'hFF : 8'h00;
-assign blue = pixel_data ? 8'hFF : 8'h00;
+always @(*) begin
+    red = pixel_data ? 8'hFF : red_data;
+    green = pixel_data ? 8'hFF : green_data;
+    blue = pixel_data ? 8'hFF : blue_data;
+end
 
 endmodule
 
@@ -239,6 +272,124 @@ assign pixel_data = pixel_value;
                         end
                         if (wstrb[3]) begin
                             screen_memory[addr[9:2]][31:24] <= data_i[31:24];
+                        end
+                    end
+                end
+                ready <= 1'b1;
+            end
+        end
+    end
+
+endmodule
+
+module lcd_rgb_memory (
+    input clk,
+    input rst_n,
+    input select,
+    input [3:0] wstrb,
+    input [11:0] addr,
+    input [31:0] data_i,
+    output reg ready,
+    output reg [31:0] data_o,
+    input [9:0] pos_x,
+    input [8:0] pos_y,
+    output reg [7:0] red_data,
+    output reg [7:0] green_data,
+    output reg [7:0] blue_data);
+
+localparam
+SCREEN_WIDTH = 480,
+SCREEN_HEIGHT = 272;
+
+localparam
+TILE_WIDTH = 8,
+TILE_HEIGHT = 8;
+
+localparam
+TILE_COLUMNS = SCREEN_WIDTH / TILE_WIDTH,
+TILE_ROWS = SCREEN_HEIGHT / TILE_HEIGHT;
+
+
+/* 5 tiles (8x8, each 16bit rgb - 565RGB) */
+reg [15:0] tile_memory [0:(5*8*8-1)];
+
+/* Screen buffer - stores displayed tiles for each field of size TILE_WIDTH * TILE_HEIGHT */
+/* Each memory cell stores 4 consequtive tiles (4 bits for rotation and mirroring and 4 bits for tile ID - up to 16 tiles) */
+reg [31:0] screen_memory [0:(TILE_COLUMNS * TILE_ROWS / 4 - 1)];
+
+
+initial begin
+    $readmemh("../tiles/tiles.hex", tile_memory);
+end
+
+/* Position inside tile field */
+wire [2:0] tile_x;
+wire [2:0] tile_y;
+
+/* Screen x and y position defined in character fields */
+wire [6:0] screen_x;
+wire [5:0] screen_y;
+
+assign tile_x = pos_x[2:0];
+assign screen_x = pos_x[9:3];
+assign tile_y = pos_y[2:0];
+assign screen_y = pos_y[8:3];
+
+reg [15:0] rgb_value; /* in same format as in memory */
+
+reg [31:0] offset;
+reg [31:0] tile_id;
+reg [31:0] tile_offset;
+
+/* Pixel value pipeline (4 clk delay) */
+/* Because of delay in pipeline, the rising edge of lcd_dclk should come when pixel_value is valid 
+    (what is 4 clock after valid pos_x and pos_y - falling edge of lcd_dclk) */
+always @(posedge clk) begin
+    if (!rst_n) begin
+        offset <= 32'd0;
+        tile_id <= 32'd0;
+        tile_offset <= 32'd0;
+        rgb_value <= 16'd0;
+    end else begin
+        offset <= screen_y * TILE_COLUMNS + screen_x;
+        tile_id <= screen_memory[offset[31:2]][{offset[1:0], 3'b110} -: 7];
+        /* Ofsset by tile_id * 64 (tile size in pixels) + tile_y * 8 (tile width) + tile_y */
+        tile_offset <= {tile_id[25:0], 6'h0} + {tile_y, 3'h0} + tile_x; 
+        rgb_value <= tile_memory[tile_offset];
+    end
+end
+
+/* Convert 565RGB into 24 bit RGB */
+always @(*) begin
+    red_data = {rgb_value[15:11], 3'h0};
+    green_data = {rgb_value[10:5], 2'h0};
+    blue_data = {rgb_value[4:0], 3'h0};
+end
+
+
+/* Bus interface - currently only screen memory is connected to the bus and tiles data memory is hardcoded */
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            ready <= 1'b0;
+        end else begin
+            ready <= 1'b0;
+
+            if (select) begin
+                if (wstrb == 'd0) begin
+                    data_o <= 32'd0;
+                end else begin
+                    if (addr[11:2] < (TILE_COLUMNS * TILE_ROWS / 4 - 1)) begin
+                        if (wstrb[0]) begin
+                            screen_memory[addr[11:2]][7:0] <= data_i[7:0];
+                        end
+                        if (wstrb[1]) begin
+                            screen_memory[addr[11:2]][15:8] <= data_i[15:8];
+                        end
+                        if (wstrb[2]) begin
+                            screen_memory[addr[11:2]][23:16] <= data_i[23:16];
+                        end
+                        if (wstrb[3]) begin
+                            screen_memory[addr[11:2]][31:24] <= data_i[31:24];
                         end
                     end
                 end

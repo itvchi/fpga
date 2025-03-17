@@ -1,20 +1,51 @@
 #include "lcd.h"
 #include <stddef.h>
 
-#define LCD ((unsigned char *) 0x80001000)
-#define SCREEN_WIDTH    60
-#define SCREEN_HEIGHT   17
-#define SCREEN_SIZE     (SCREEN_WIDTH * SCREEN_HEIGHT)
+#define ASCII_BUFFER_WIDTH  60
+#define ASCII_BUFFER_HEIGHT 17
+#define ASCII_BUFFER_SIZE   (ASCII_BUFFER_WIDTH * ASCII_BUFFER_HEIGHT)
+typedef struct {
+    union {
+        char buffer[ASCII_BUFFER_HEIGHT][ASCII_BUFFER_WIDTH];
+        char data[ASCII_BUFFER_SIZE];
+    };
+} LcdAscii_TypeDef;
+
+#define TILES_BUFFER_WIDTH  60
+#define TILES_BUFFER_HEIGHT 34
+#define TILES_BUFFER_SIZE   (TILES_BUFFER_WIDTH * TILES_BUFFER_HEIGHT)
+
+typedef struct {
+    union {
+        char buffer[TILES_BUFFER_HEIGHT][TILES_BUFFER_WIDTH];
+        char data[TILES_BUFFER_SIZE];
+    };
+} LcdTiles_TypeDef;
+
+#define LCD_ASCII_BASE  0x80001000
+#define LCD_ASCII       ((LcdAscii_TypeDef *) LCD_ASCII_BASE)
+#define LCD_TILES_BASE  0x80002000
+#define LCD_TILES       ((LcdTiles_TypeDef *) LCD_TILES_BASE)
 
 
 unsigned int global_x, global_y;
 
 void lcd_clear() {
 
-    unsigned char *screen = LCD;
+    size_t index;
+    char *screen = LCD_ASCII->data;
 
-    for (size_t index = 0; index < SCREEN_SIZE; index++) {
+    for (index = 0; index < ASCII_BUFFER_SIZE; index++) {
         screen[index] = 0x00;
+    }
+
+    /* Tile test */
+    screen = LCD_TILES->data;
+    for (index = 0; index < (TILES_BUFFER_SIZE/2 - 1); index++) {
+        screen[index] = 0x00;
+    }
+    for (; index < (TILES_BUFFER_SIZE - 1); index++) {
+        screen[index] = 0x03;
     }
 
     global_x = 0;
@@ -31,21 +62,21 @@ void lcd_write_str(char *str) {
 
 void lcd_write_str_xy(char *str, unsigned int x, unsigned int y) {
 
-    size_t index = y * SCREEN_WIDTH + x;
+    size_t index = y * ASCII_BUFFER_WIDTH + x;
 
-    while (*str && index < SCREEN_SIZE) {
+    while (*str && index < ASCII_BUFFER_SIZE) {
         if (*str == '\r') {
             x = 0;
-            index = y * SCREEN_WIDTH + x;
+            index = y * ASCII_BUFFER_WIDTH + x;
         } else if (*str == '\n') {
             x = 0;
             y++;
-            index = y * SCREEN_WIDTH + x;
+            index = y * ASCII_BUFFER_WIDTH + x;
         } else {
             lcd_write_char_idx(str, index);
             index++;
             x++;
-            if (x >= SCREEN_WIDTH) {
+            if (x >= ASCII_BUFFER_WIDTH) {
                 x = 0;
                 y++;
             }
@@ -59,16 +90,16 @@ void lcd_write_str_xy(char *str, unsigned int x, unsigned int y) {
 
 static void lcd_write_char(char *ch, unsigned int x, unsigned int y) {
 
-    size_t index = y * SCREEN_WIDTH + x;
+    size_t index = y * ASCII_BUFFER_WIDTH + x;
 
     lcd_write_char_idx(ch, index);
 }
 
 static void lcd_write_char_idx(char *ch, unsigned int index) {
 
-    unsigned char *screen = LCD;
+    char *screen = LCD_ASCII->data;
 
-    if (index < SCREEN_SIZE) {
+    if (index < ASCII_BUFFER_SIZE) {
         if (*ch < 0x20 || *ch > 0x7E) {
             screen[index] = 0x20; /* Space */
         } else {

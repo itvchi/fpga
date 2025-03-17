@@ -62,9 +62,10 @@ module top (
     wire        uart_rx_irq;
     wire        uart_tx_irq;
 
+    reg         lcd_ascii_sel;
     reg         lcd_rgb_sel;
-    wire        lcd_rgb_ready;
-    wire [31:0] lcd_rgb_data_o;
+    wire        lcd_ready;
+    wire [31:0] lcd_data_o;
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
@@ -73,7 +74,8 @@ module top (
      * MM_LED       80000000
      * SYSTICK      80000100 - 80000110
      * UART         80000200 - 80000220
-     * LCD_ASCII    80001000 - 80001400 (1020 bytes - 60x17 screen)
+     * LCD_ASCII    80001000 - 80001400 (1020 bytes - 60x17 screen - 8x16 characters - 95 ASCII)
+     * LCD_RGB      80002000 - 80002800 (2040 bytes - 60x34 screen - 8x8 tiles - 16 tilesID + rotation & mirroring)
     */
 
     always @(*) begin
@@ -82,6 +84,7 @@ module top (
         systick_sel <= 1'b0;
         flash_sel <= 1'b0;
         uart_sel <= 1'b0;
+        lcd_ascii_sel <= 1'b0;
         lcd_rgb_sel <= 1'b0;
 
         if (mem_valid) begin
@@ -96,13 +99,15 @@ module top (
             end else if ((mem_addr >= 32'h8000_0200) && (mem_addr < 32'h8000_0220)) begin
                 uart_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_1000) && (mem_addr < 32'h8000_1400)) begin
+                lcd_ascii_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h8000_2000) && (mem_addr < 32'h8000_2800)) begin
                 lcd_rgb_sel <= 1'b1;
             end
         end
     end
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready | flash_ready | uart_ready | lcd_rgb_ready);
+    assign mem_ready = mem_valid & (sram_ready | leds_ready | systick_ready | flash_ready | uart_ready | lcd_ready);
 
     /* mem_rdata bus multiplexer */
     assign mem_rdata = sram_sel ? sram_data_o :
@@ -110,7 +115,7 @@ module top (
                         systick_sel ? systick_data_o :
                         flash_sel ? flash_data_o : 
                         uart_sel ? uart_data_o : 
-                        lcd_rgb_sel ? lcd_rgb_data_o : 32'h0;
+                        (lcd_ascii_sel || lcd_rgb_sel) ? lcd_data_o : 32'h0;
 
     reset_control reset_controller (
         .clk(clk),
@@ -180,12 +185,13 @@ module top (
     lcd_rgb lcd (
         .clk(clk),
         .reset_n(reset_n),
-        .select(lcd_rgb_sel),
+        .ascii_select(lcd_ascii_sel),
+        .rgb_select(lcd_rgb_sel),
         .wstrb(mem_wstrb),
-        .addr(mem_addr[9:0]), /* 10 bits width address space - 1024 bytes */
+        .addr(mem_addr[11:0]), /* 12 bits width address space - 4096 bytes */
         .data_i(mem_wdata),
-        .ready(lcd_rgb_ready),
-        .data_o(lcd_rgb_data_o),
+        .ready(lcd_ready),
+        .data_o(lcd_data_o),
         .red(red),
         .green(green),
         .blue(blue), 
