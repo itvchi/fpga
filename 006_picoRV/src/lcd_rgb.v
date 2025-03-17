@@ -241,7 +241,11 @@ always @(posedge clk) begin
         /* Screen_memory cell (modulo 4 of offset) and byte (offset lower bits+1 * 8, then -2, which is same as 
             offset lower bits * 8 + 6 - the operation is for range and omitt color bit and take 7 bit of data) selection */
         character <= screen_memory[offset[31:2]][{offset[1:0], 3'b110} -: 7];
-        font_offset <= {character[27:0], 4'h0} + char_y; /* Same as *16, but saved 4 registers */
+        if (character < 8'h20 || character > 8'h7E) begin
+            font_offset <= char_y; /* Offset to character 0 (space) */
+        end else begin
+            font_offset <= {character[27:0] - 8'h20, 4'h0} + char_y; /* Same as *16, but saved 4 registers */
+        end
         pixel_value <= font_memory[font_offset][char_x];
     end
 end

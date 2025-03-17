@@ -100,11 +100,7 @@ static void lcd_write_char_idx(char *ch, unsigned int index) {
     char *screen = LCD_ASCII->data;
 
     if (index < ASCII_BUFFER_SIZE) {
-        if (*ch < 0x20 || *ch > 0x7E) {
-            screen[index] = 0x20; /* Space */
-        } else {
-            screen[index] = *ch - 0x20;
-        }
+        screen[index] = *ch;
     }
 }
 
