@@ -62,19 +62,14 @@ void lcd_write_str(char *str) {
 
 void lcd_write_str_xy(char *str, unsigned int x, unsigned int y) {
 
-    size_t index = y * ASCII_BUFFER_WIDTH + x;
-
-    while (*str && index < ASCII_BUFFER_SIZE) {
+    while (*str && (y < ASCII_BUFFER_HEIGHT && x < ASCII_BUFFER_WIDTH)) {
         if (*str == '\r') {
             x = 0;
-            index = y * ASCII_BUFFER_WIDTH + x;
         } else if (*str == '\n') {
             x = 0;
             y++;
-            index = y * ASCII_BUFFER_WIDTH + x;
         } else {
-            lcd_write_char_idx(str, index);
-            index++;
+            lcd_write_char(str, x, y);
             x++;
             if (x >= ASCII_BUFFER_WIDTH) {
                 x = 0;
@@ -90,17 +85,15 @@ void lcd_write_str_xy(char *str, unsigned int x, unsigned int y) {
 
 static void lcd_write_char(char *ch, unsigned int x, unsigned int y) {
 
-    size_t index = y * ASCII_BUFFER_WIDTH + x;
-
-    lcd_write_char_idx(ch, index);
+    if (y < ASCII_BUFFER_HEIGHT && x < ASCII_BUFFER_WIDTH) {
+        LCD_ASCII->buffer[y][x] = *ch;
+    }
 }
 
 static void lcd_write_char_idx(char *ch, unsigned int index) {
 
-    char *screen = LCD_ASCII->data;
-
     if (index < ASCII_BUFFER_SIZE) {
-        screen[index] = *ch;
+        LCD_ASCII->data[index] = *ch;
     }
 }
 
