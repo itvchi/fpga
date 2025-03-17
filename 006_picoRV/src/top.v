@@ -68,12 +68,12 @@ module top (
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
-     * FLASH    00000000 - 00012fff
-     * SRAM     00020000 - 00021fff
-     * MM_LED   80000000
-     * SYSTICK  80000100 - 80000110
-     * UART     80000200 - 80000220
-     * LCD_RGB  80001000 - 80001400 (1020 bytes - 60x17 screen)
+     * FLASH        00000000 - 00012fff
+     * SRAM         00020000 - 00021fff
+     * MM_LED       80000000
+     * SYSTICK      80000100 - 80000110
+     * UART         80000200 - 80000220
+     * LCD_ASCII    80001000 - 80001400 (1020 bytes - 60x17 screen)
     */
 
     always @(*) begin
@@ -182,7 +182,7 @@ module top (
         .reset_n(reset_n),
         .select(lcd_rgb_sel),
         .wstrb(mem_wstrb),
-        .addr(mem_addr[11:0]),
+        .addr(mem_addr[9:0]), /* 10 bits width address space - 1024 bytes */
         .data_i(mem_wdata),
         .ready(lcd_rgb_ready),
         .data_o(lcd_rgb_data_o),

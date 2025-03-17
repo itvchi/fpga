@@ -4,7 +4,7 @@ module lcd_rgb (
     /* Bus interface */
     input select,
     input [3:0] wstrb,
-    input [11:0] addr,
+    input [9:0] addr,
     input [31:0] data_i,
     output ready,
     output [31:0] data_o,
@@ -27,7 +27,7 @@ lcd display(
     .pos_x(pos_x),
     .pos_y(pos_y));
 
-lcd_memory display_memory(
+lcd_ascii_memory display_ascii_memory(
     .clk(clk),
     .rst_n(reset_n),
     .select(select),
@@ -135,12 +135,12 @@ assign pos_y = (v_counter < VERTICAL_BLANKING) ? 9'd0 : (v_counter - VERTICAL_BL
 
 endmodule
 
-module lcd_memory (
+module lcd_ascii_memory (
     input clk,
     input rst_n,
     input select,
     input [3:0] wstrb,
-    input [11:0] addr,
+    input [9:0] addr,
     input [31:0] data_i,
     output reg ready,
     output reg [31:0] data_o,
@@ -215,15 +215,11 @@ end
 
 assign pixel_data = pixel_value;
 
-reg mem_valid;
-reg [11:0] mem_addr;
-reg [6:0] mem_data;
 
 /* Bus interface */
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             ready <= 1'b0;
-            mem_valid <= 1'b0;
         end else begin
             ready <= 1'b0;
 
@@ -231,18 +227,18 @@ reg [6:0] mem_data;
                 if (wstrb == 'd0) begin
                     data_o <= 32'd0;
                 end else begin
-                    if (addr[11:2] < (CHAR_COLUMNS * CHAR_ROWS / 4 - 1)) begin
+                    if (addr[9:2] < (CHAR_COLUMNS * CHAR_ROWS / 4 - 1)) begin
                         if (wstrb[0]) begin
-                            screen_memory[addr[11:2]][7:0] <= data_i[7:0];
+                            screen_memory[addr[9:2]][7:0] <= data_i[7:0];
                         end
                         if (wstrb[1]) begin
-                            screen_memory[addr[11:2]][15:8] <= data_i[15:8];
+                            screen_memory[addr[9:2]][15:8] <= data_i[15:8];
                         end
                         if (wstrb[2]) begin
-                            screen_memory[addr[11:2]][23:16] <= data_i[23:16];
+                            screen_memory[addr[9:2]][23:16] <= data_i[23:16];
                         end
                         if (wstrb[3]) begin
-                            screen_memory[addr[11:2]][31:24] <= data_i[31:24];
+                            screen_memory[addr[9:2]][31:24] <= data_i[31:24];
                         end
                     end
                 end
