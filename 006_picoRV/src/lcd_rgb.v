@@ -191,8 +191,8 @@ assign screen_y = pos_y[8:4];
 reg pixel_value;
 
 reg [31:0] offset;
-reg [31:0] font_offset;
 reg [31:0] character;
+reg [31:0] font_offset;
 
 /* Pixel value pipeline (4 clk delay) */
 /* Because of delay in pipeline, the rising edge of lcd_dclk should come when pixel_value is valid 
@@ -200,15 +200,15 @@ reg [31:0] character;
 always @(posedge clk) begin
     if (!rst_n) begin
         offset <= 32'd0;
-        font_offset <= 32'd0;
         character <= 32'd0;
+        font_offset <= 32'd0;
         pixel_value <= 1'b0;
     end else begin
         offset <= screen_y * CHAR_COLUMNS + screen_x;
         /* Screen_memory cell (modulo 4 of offset) and byte (offset lower bits+1 * 8, then -2, which is same as 
             offset lower bits * 8 + 6 - the operation is for range and omitt color bit and take 7 bit of data) selection */
         character <= screen_memory[offset[31:2]][{offset[1:0], 3'b110} -: 7];
-        font_offset <= {character[31:0], 4'h0} + char_y; /* Same as *16, but saved 4 registers */
+        font_offset <= {character[27:0], 4'h0} + char_y; /* Same as *16, but saved 4 registers */
         pixel_value <= font_memory[font_offset][char_x];
     end
 end
