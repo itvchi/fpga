@@ -70,7 +70,7 @@ always @(posedge clk) begin
     end else begin
         offset <= screen_y * CHAR_COLUMNS + screen_x;
         character <= screen_memory[offset[31:2]][{offset[1:0], 3'b110} -: 7];
-        font_offset <= {character[31:0], 4'h0} + char_y;
+        font_offset <= {character[27:0], 4'h0} + char_y;
         pixel_value <= font_memory[font_offset][char_x];
     end
 end

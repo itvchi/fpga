@@ -107,13 +107,13 @@ wire [7:0] red_data;
 wire [7:0] green_data;
 wire [7:0] blue_data;
 
-pattern_generator pattern_gen (
-    .pattern(pattern_counter[8:7]),
-    .pos_x(pos_x),
-    .pos_y(pos_y),
-    .red(red_data),
-    .green(green_data),
-    .blue(blue_data));
+// pattern_generator pattern_gen (
+//     .pattern(pattern_counter[8:7]),
+//     .pos_x(pos_x),
+//     .pos_y(pos_y),
+//     .red(red_data),
+//     .green(green_data),
+//     .blue(blue_data));
 
 /* Generate characters pixel_data */
 wire pixel_data;
@@ -124,6 +124,15 @@ pixel_generator pixel_gen (
     .pos_x(pos_x),
     .pos_y(pos_y),
     .pixel_data(pixel_data));
+
+tile_generator tile_gen (
+    .clk(clk),
+    .rst_n(rst_n),
+    .pos_x(pos_x),
+    .pos_y(pos_y),
+    .red(red_data),
+    .green(green_data),
+    .blue(blue_data));
 
 /* Display background data or black pixel of character */
 assign red = pixel_data ? 8'h00 : red_data;

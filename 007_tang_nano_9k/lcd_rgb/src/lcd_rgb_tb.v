@@ -2,6 +2,7 @@
 `include "lcd_rgb.v"
 `include "pixel_generator.v"
 `include "pattern_generator.v"
+`include "tile_generator.v"
 
 module lcd_rgb_tb();
 
