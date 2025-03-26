@@ -1,8 +1,8 @@
 BUILDDIR:=./build
-SRCS:=main.c leds.c systick.c irq.c perf.c uart.c lcd.c
+SRCS:=$(wildcard src/*.c)
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(BUILDDIR)/_irq.o
-OBJS+=$(patsubst %.c, $(BUILDDIR)/%.o, $(SRCS))
+OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
 LIBS:=/usr/lib/gcc/riscv64-unknown-elf/13.2.0/rv32i/ilp32/libgcc.a
 
 MACH:=rv32i2p0
@@ -18,7 +18,8 @@ TARGET_FLAGS:=\
 CFLAGS:=\
 	-c -Wall -Wextra\
 	$(TARGET_FLAGS)\
-	-std=gnu11 -O0
+	-std=gnu11 -O0\
+	-Iinc
 
 LDFLAGS:=\
 	$(TARGET_FLAGS)\
@@ -32,10 +33,10 @@ all: flash.bin
 $(BUILDDIR)/%.o: %.S | build_dir
 	$(CC) $(CFLAGS) -o $@ $<
 
-$(BUILDDIR)/%.o: %.c | build_dir
+$(BUILDDIR)/%.o: src/%.c | build_dir
 	$(CC) $(CFLAGS) -o $@ $<
 
-final.elf: $(OBJS) | build_dir 
+final.elf: $(OBJS) | build_dir
 	$(CC) $(LDFLAGS) -o $(BUILDDIR)/$@ $^ $(LIBS)
 
 flash.bin: final.elf
