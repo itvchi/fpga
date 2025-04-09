@@ -10,6 +10,7 @@ add_file -type verilog "src/systick.v"
 add_file -type verilog "src/uart.v"
 add_file -type verilog "src/lcd_rgb.v"
 add_file -type cst "constraints/lcd.cst"
+add_file -type sdc "constraints/common.sdc"
 set_option -synthesis_tool gowinsynthesis
 set_option -output_base_name picoRV
 set_option -top_module top

@@ -9,6 +9,7 @@ add_file -type verilog "src/mm_leds.v"
 add_file -type verilog "src/systick.v"
 add_file -type verilog "src/uart.v"
 add_file -type cst "constraints/base.cst"
+add_file -type sdc "constraints/common.sdc"
 set_option -synthesis_tool gowinsynthesis
 set_option -output_base_name picoRV
 set_option -top_module top
