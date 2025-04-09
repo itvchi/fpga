@@ -10,3 +10,4 @@ Content:
 > 007_tang_nano_9k - simple examples like uart interface or lan8720 driver
 > 008_spi_flash - spi interface for flash memory (for future use in picoRV)
 > 009_amba - examples of ARM AMBA interface inplementations (like AXI-Stream)
+> 010_one_sec_timer - high precision one second timer (250MHz pll tick) - focused on positive slack for counters paths
