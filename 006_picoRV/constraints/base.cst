@@ -21,7 +21,7 @@ IO_LOC "leds[5]" 16;
 IO_PORT "leds[5]" IO_TYPE=LVCMOS18 PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
 
 /* UART */
-IO_LOC  "tx_gpio" 48;
+IO_LOC  "tx_gpio" 17;
 IO_PORT "tx_gpio" IO_TYPE=LVCMOS33 PULL_MODE=UP;
-IO_LOC  "rx_gpio" 49;
+IO_LOC  "rx_gpio" 18;
 IO_PORT "rx_gpio" IO_TYPE=LVCMOS33 PULL_MODE=UP;
