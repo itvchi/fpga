@@ -1,9 +1,7 @@
+CC = riscv64-unknown-elf-gcc
+OBJCOPY = riscv64-unknown-elf-objcopy
+
 BUILDDIR:=./build
-SRCS:=$(wildcard src/*.c)
-OBJS:=$(BUILDDIR)/startup.o
-OBJS+=$(BUILDDIR)/_irq.o
-OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
-LIBS:=/usr/lib/gcc/riscv64-unknown-elf/13.2.0/rv32i/ilp32/libgcc.a
 
 MACH:=rv32i2p0
 ABI:=ilp32
@@ -25,8 +23,33 @@ LDFLAGS:=\
 	$(TARGET_FLAGS)\
 	-Tlinker_script.ld
 
-CC = riscv64-unknown-elf-gcc
-OBJCOPY = riscv64-unknown-elf-objcopy
+include ../.config
+
+SRCS := src/main.c src/irq.c src/leds.c
+ifeq ($(CONFIG_FS_BASE),y)
+	SRCS += src/app_base.c
+endif
+ifeq ($(CONFIG_FS_LCD),y)
+	SRCS += src/app_lcd.c
+endif
+ifeq ($(CONFIG_WITH_SYSTICK),y)
+	SRCS += src/systick.c
+	CFLAGS += -DCONFIG_WITH_SYSTICK
+endif
+ifeq ($(CONFIG_WITH_UART),y)
+	SRCS += src/uart.c
+	CFLAGS += -DCONFIG_WITH_UART
+endif
+ifeq ($(CONFIG_WITH_LCD),y)
+	SRCS += src/lcd.c
+	CFLAGS += -DCONFIG_WITH_LCDs
+endif
+
+OBJS:=$(BUILDDIR)/startup.o
+OBJS+=$(BUILDDIR)/_irq.o
+OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
+LIBS:=/usr/lib/gcc/riscv64-unknown-elf/13.2.0/rv32i/ilp32/libgcc.a
+
 
 all: flash.bin
 

@@ -1,0 +1,38 @@
+choice
+    prompt "System version"
+    default FS_MINIMAL
+
+config FS_MINIMAL
+    bool "Minimal"
+    help 
+        picoRV core with memory mapped leds module
+
+config FS_BASE
+    bool "Base"
+    help 
+        picoRV core with memory mapped leds module,
+        sytick and uart
+    
+config FS_LCD
+    bool "Lcd"
+    help 
+        picoRV core with memory mapped leds module,
+        sytick, uart and rgb interface lcd driver
+
+endchoice
+
+menu "Select modules"
+
+config WITH_SYSTICK
+    bool "Include systick API"
+    depends on FS_BASE || FS_LCD
+
+config WITH_UART
+    bool "Include uart API"
+    depends on FS_BASE || FS_LCD
+
+config WITH_LCD
+    bool "Include lcd API"
+    depends on FS_LCD
+
+endmenu

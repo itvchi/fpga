@@ -1,25 +1,27 @@
+KCONFIG_CONFIG := .config
 SRCS := $(wildcard src/*.v)
 FS := impl/pnr/picoRV.fs
 
-all:
-	@echo "No target selected. Available targets:\
-	\nfs_minimal, fs_base, fs_lcd"
+all: fs firmware
 
-fs_minimal: $(FS) 
-fs_base: $(FS)
-fs_lcd: $(FS)
+menuconfig:
+	kconfig-mconf Kconfig
 
-fs_minimal: $(SRCS)
+include .config
+
+fs: $(SRCS) $(KCONFIG_CONFIG)
+ifeq ($(CONFIG_FS_MINIMAL),y)
 	@echo "Building picoRV_minimal bitstream..."
 	gw_sh tcl/minimal.tcl
-
-fs_base: $(SRCS)
+endif
+ifeq ($(CONFIG_FS_BASE),y)
 	@echo "Building picoRV_base bitstream..."
 	gw_sh tcl/base.tcl
-
-fs_lcd: $(SRCS)
+endif
+ifeq ($(CONFIG_FS_LCD),y)
 	@echo "Building picoRV_lcd bitstream..."
 	gw_sh tcl/base.tcl
+endif
 
 flash: $(FS)
 	@echo "Flashing picoRV bitstream..."
