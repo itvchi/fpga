@@ -47,6 +47,10 @@ ifeq ($(CONFIG_WITH_UART),y)
 	SRCS += src/uart.c
 	CFLAGS += -DCONFIG_WITH_UART
 endif
+ifeq ($(CONFIG_WITH_SPI),y)
+	SRCS += src/spi.c
+	CFLAGS += -DCONFIG_WITH_SPI
+endif
 
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(BUILDDIR)/_irq.o

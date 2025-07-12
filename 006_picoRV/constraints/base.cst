@@ -25,3 +25,11 @@ IO_LOC  "tx_gpio" 17;
 IO_PORT "tx_gpio" IO_TYPE=LVCMOS33 PULL_MODE=UP;
 IO_LOC  "rx_gpio" 18;
 IO_PORT "rx_gpio" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
+/* SPI */
+IO_LOC  "spi_cs"    48;
+IO_PORT "spi_cs"    IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "spi_clk"   49;
+IO_PORT "spi_clk"   IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "spi_mosi"  31;
+IO_PORT "spi_mosi"  IO_TYPE=LVCMOS33 PULL_MODE=UP;
