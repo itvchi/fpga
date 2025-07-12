@@ -12,9 +12,8 @@ void led_action(void* ctx) {
     set_leds(*led_ctx);
 }
 
-int app_minimal();
-int app_base();
-int app_lcd();
+void app_base();
+void app_lcd();
 
 int main() {
 
@@ -27,12 +26,12 @@ int main() {
 #endif /* defined(CONFIG_WITH_SYSTICK) */
 
 #if defined(CONFIG_FS_MINIMAL)
-    return app_minimal();
+    while (1) {}
 #elif defined(CONFIG_FS_BASE)
-    return app_base();
+    app_base();
 #elif defined(CONFIG_FS_LCD)
-    return app_lcd();
-#else 
-    return 0;
+    app_lcd();
 #endif
+
+return 0;
 }

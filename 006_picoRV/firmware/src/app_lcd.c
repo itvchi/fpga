@@ -1,7 +1,7 @@
 #include "lcd.h"
 
 
-int app_lcd() {
+void app_lcd() {
 
     lcd_clear();
     lcd_write_str("Hello world!!!");
@@ -10,6 +10,4 @@ int app_lcd() {
 
     while (1) {
     }
-
-    return 0;
 }

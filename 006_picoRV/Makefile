@@ -20,7 +20,7 @@ ifeq ($(CONFIG_FS_BASE),y)
 endif
 ifeq ($(CONFIG_FS_LCD),y)
 	@echo "Building picoRV_lcd bitstream..."
-	gw_sh tcl/base.tcl
+	gw_sh tcl/lcd.tcl
 endif
 
 flash: $(FS)

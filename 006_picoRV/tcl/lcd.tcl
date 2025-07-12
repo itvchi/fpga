@@ -1,5 +1,5 @@
 create_project -name 006_picoRV -pn GW1NR-LV9QN88PC6/I5 -device_version C -force -dir ../
-add_file -type verilog "src/top_base.v"
+add_file -type verilog "src/top_lcd.v"
 add_file -type verilog "src/picorv32.v"
 add_file -type verilog "src/reset_control.v"
 add_file -type verilog "src/sram.v"
@@ -13,5 +13,6 @@ add_file -type cst "constraints/lcd.cst"
 add_file -type sdc "constraints/common.sdc"
 set_option -synthesis_tool gowinsynthesis
 set_option -output_base_name picoRV
-set_option -top_module top
+set_option -top_module top_lcd
+set_option -use_sspi_as_gpio 1
 run all

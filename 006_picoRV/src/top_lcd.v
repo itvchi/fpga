@@ -1,4 +1,4 @@
-module top (
+module top_lcd (
     input clk,
     input rst_btn_n,
     output [5:0] leds,

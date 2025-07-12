@@ -1,4 +1,4 @@
-module top (
+module top_base (
     input clk,
     input rst_btn_n,
     output [5:0] leds,

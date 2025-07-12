@@ -1,22 +1,23 @@
 #include "system.h"
 #include "uart.h"
+#include "systick.h"
 
-int app_base() {
+
+void uart_action(void* ctx) {
+
+    uart_print_irq("Hello world!\r\n");
+}
+
+void app_base() {
 
 #if defined(CONFIG_WITH_UART)
     uart_init(F_CPU / (2 * BAUDRATE));
     uart_print_irq("Hello world!\r\n");
 #endif /* defined(CONFIG_WITH_UART) */
+#if defined(CONFIG_WITH_SYSTICK)
+    systick_add_event(uart_action, 0, SYSTICK_PRIO_LOW, 10);
+#endif /* defined(CONFIG_WITH_SYSTICK) */
 
     while (1) {
-#if defined(CONFIG_WITH_UART)
-        uart_print_irq("Press any key\r\n");
-        char character = uart_get();
-        uart_print_irq("\rYou pressed: ");
-        uart_put(character);
-        uart_print_irq("\r\n");
-#endif /* defined(CONFIG_WITH_UART) */
     }
-
-    return 0;
 }
