@@ -10,8 +10,9 @@ TARGET_FLAGS:=\
 	-march=$(MACH)\
 	-mabi=$(ABI)\
 	-nostartfiles\
-	-nostdlib\
 	-static\
+	-ffunction-sections\
+	-fdata-sections
 
 CFLAGS:=\
 	-c -Wall -Wextra\
@@ -21,6 +22,7 @@ CFLAGS:=\
 
 LDFLAGS:=\
 	$(TARGET_FLAGS)\
+	-Wl,--gc-sections\
 	-Tlinker_script.ld
 
 include ../.config
