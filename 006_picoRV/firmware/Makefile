@@ -1,5 +1,5 @@
-CC = riscv64-unknown-elf-gcc
-OBJCOPY = riscv64-unknown-elf-objcopy
+CC = riscv32-unknown-elf-gcc
+OBJCOPY = riscv32-unknown-elf-objcopy
 
 BUILDDIR:=./build
 
@@ -49,7 +49,7 @@ endif
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(BUILDDIR)/_irq.o
 OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
-LIBS:=/usr/lib/gcc/riscv64-unknown-elf/14.2.0/rv32i/ilp32/libgcc.a
+LIBS:=${HOME}/opt/riscv-rv32i/lib/gcc/riscv32-unknown-elf/15.1.0/libgcc.a
 
 all: flash.bin
 

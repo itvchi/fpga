@@ -5,7 +5,7 @@
 
 void uart_action(void* ctx) {
 
-    uart_print_irq("Hello world!\r\n");
+    uart_print_irq("Hello RISC-V!\r\n");
 }
 
 void app_base() {
