@@ -1,6 +1,6 @@
 #include "spi.h"
 #include "gpio.h"
-#include <stddef.h>
+
 
 typedef struct {
     volatile uint32_t CONFIG;
@@ -52,4 +52,16 @@ void spi_send_blocking(char byte) {
 
     while (status->tx_busy);
     SPI->TX_DATA = byte;
+}
+
+__attribute__((section(".code_ram")))
+void spi_send_bytes(uint8_t *data, size_t data_len) {
+
+    SpiStatus_TypeDef *status = (SpiStatus_TypeDef *)&(SPI->STATUS);
+    size_t idx;
+
+    for (idx = 0; idx < data_len; idx++) {
+        while (status->tx_busy);
+        SPI->TX_DATA = data[idx];
+    }
 }

@@ -13,6 +13,7 @@ void led_action(void* ctx) {
 }
 
 void app_base();
+void app_st7789();
 void app_lcd();
 
 int main() {
@@ -28,7 +29,8 @@ int main() {
 #if defined(CONFIG_FS_MINIMAL)
     while (1) {}
 #elif defined(CONFIG_FS_BASE)
-    app_base();
+    // app_base();
+    app_st7789();
 #elif defined(CONFIG_FS_LCD)
     app_lcd();
 #endif

@@ -55,6 +55,7 @@ ifeq ($(CONFIG_WITH_SPI),y)
 	SRCS += src/spi.c
 	CFLAGS += -DCONFIG_WITH_SPI
 endif
+SRCS += src/app_st7789.c src/st7789_lcd/fonts.c src/st7789_lcd/lcd.c src/st7789_lcd/st7789.c
 
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(BUILDDIR)/_irq.o
