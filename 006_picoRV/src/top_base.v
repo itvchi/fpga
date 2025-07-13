@@ -116,13 +116,19 @@ module top_base (
                         spi_sel ? spi_data_o :
                         gpio_sel ? gpio_data_o : 32'h0;
 
+    wire pll_clk;
+
+    Gowin_rPLL rpll(
+        .clkout(pll_clk),
+        .clkin(clk));
+
     reset_control reset_controller (
-        .clk(clk),
+        .clk(pll_clk),
         .rst_btn_n(rst_btn_n),
         .reset_n(reset_n));
 
     user_flash_custom flash (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),
         .select(flash_sel),
         .wstrb(mem_wstrb),
@@ -134,7 +140,7 @@ module top_base (
         .cache_miss(cache_miss));
 
     sram #(.ADDRWIDTH(13)) memory (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),      
         .select(sram_sel),
         .wstrb(mem_wstrb),
@@ -144,7 +150,7 @@ module top_base (
         .data_o(sram_data_o));
 
     mm_leds leds_slave (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),
         .select(leds_sel),
         .data_i(mem_wdata),
@@ -153,7 +159,7 @@ module top_base (
         .data_o(leds_data_o));
 
     systick timer (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),
         .select(systick_sel),
         .wstrb(mem_wstrb),
@@ -164,7 +170,7 @@ module top_base (
         .irq(systick_irq));
 
     uart uart_periph (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),
         .select(uart_sel),
         .wstrb(mem_wstrb),
@@ -178,7 +184,7 @@ module top_base (
         .irq_tx(uart_tx_irq));
 
     spi spi_periph (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),
         .select(spi_sel),
         .wstrb(mem_wstrb),
@@ -191,7 +197,7 @@ module top_base (
         .spi_mosi(spi_mosi));
 
     gpio gpio_periph (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),
         .select(gpio_sel),
         .wstrb(mem_wstrb),
@@ -231,7 +237,7 @@ module top_base (
         .MASKED_IRQ(MASKED_IRQ),
         .LATCHED_IRQ(LATCHED_IRQ)
     ) cpu (
-        .clk         (clk),
+        .clk         (pll_clk),
         .resetn      (reset_n),
         .mem_valid   (mem_valid),
         .mem_instr   (mem_instr),

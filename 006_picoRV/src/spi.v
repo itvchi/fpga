@@ -1,6 +1,6 @@
 module spi_master #(
-    parameter CLK_FREQ = 27000000,
-    parameter SPI_FREQ = 4500000,
+    parameter CLK_FREQ = 54000000,
+    parameter SPI_FREQ = 9000000,
     parameter CPOL = 0,
     parameter CPHA = 0
 ) (
