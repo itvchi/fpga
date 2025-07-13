@@ -23,17 +23,21 @@ endchoice
 
 menu "Select modules"
 
+config WITH_GPIO
+    bool "Include gpio API"
+    depends on FS_MINIMAL || FS_BASE || FS_LCD
+
 config WITH_SYSTICK
     bool "Include systick API"
-    depends on FS_BASE || FS_LCD
+    depends on (FS_BASE || FS_LCD) && WITH_GPIO
 
 config WITH_UART
     bool "Include uart API"
-    depends on FS_BASE || FS_LCD
+    depends on (FS_BASE || FS_LCD) && WITH_GPIO
 
 config WITH_SPI
     bool "Include spi API"
-    depends on FS_BASE
+    depends on FS_BASE && WITH_GPIO
 
 config WITH_LCD
     bool "Include lcd API"

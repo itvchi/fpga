@@ -39,6 +39,10 @@ ifeq ($(CONFIG_FS_LCD),y)
 	SRCS += src/lcd.c src/app_lcd.c
 	CFLAGS += -DCONFIG_FS_LCD
 endif
+ifeq ($(CONFIG_WITH_GPIO),y)
+	SRCS += src/gpio.c
+	CFLAGS += -DCONFIG_WITH_GPIO
+endif
 ifeq ($(CONFIG_WITH_SYSTICK),y)
 	SRCS += src/systick.c
 	CFLAGS += -DCONFIG_WITH_SYSTICK

@@ -1,4 +1,5 @@
 #include "spi.h"
+#include "gpio.h"
 #include <stddef.h>
 
 typedef struct {
@@ -37,6 +38,10 @@ void spi_init() {
     while (config->reset); /* Wait until reset done */
 
     config->enable = 1; /* Enable spi */
+
+    gpio_set_mode(GPIO_MODE_AF, 2);
+    gpio_set_mode(GPIO_MODE_AF, 3);
+    gpio_set_mode(GPIO_MODE_AF, 4);
 }
 
 void spi_send_blocking(char byte) {

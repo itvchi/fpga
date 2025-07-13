@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "gpio.h"
 #include <stddef.h>
 
 typedef struct {
@@ -42,6 +43,9 @@ void uart_init(uint32_t baudrate_prescaler) {
 
     UART->BAUD_PRESC = baudrate_prescaler;
     config->enable = 1; /* Enable uart */
+
+    gpio_set_mode(GPIO_MODE_AF, 0);
+    gpio_set_mode(GPIO_MODE_AF, 1);
 }
 
 void uart_put(char byte) {

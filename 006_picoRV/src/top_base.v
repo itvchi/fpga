@@ -2,11 +2,7 @@ module top_base (
     input clk,
     input rst_btn_n,
     output [5:0] leds,
-    input rx_gpio,
-    output tx_gpio,
-    output spi_cs,
-    output spi_clk,
-    output spi_mosi);
+    inout [7:0] gpio);
     
     parameter BARREL_SHIFTER = 0;
     parameter ENABLE_MUL = 0;
@@ -52,12 +48,21 @@ module top_base (
     reg         uart_sel;
     wire        uart_ready;
     wire [31:0] uart_data_o;
+    wire        uart_rx_gpio;
+    wire        uart_tx_gpio;
     wire        uart_rx_irq;
     wire        uart_tx_irq;
 
     reg         spi_sel;
     wire        spi_ready;
     wire [31:0] spi_data_o;
+    wire        spi_cs;
+    wire        spi_clk;
+    wire        spi_mosi;
+
+    reg         gpio_sel;
+    wire        gpio_ready;
+    wire [31:0] gpio_data_o;
 
 
     /* Assign slave select signal basing on mem_addr */
@@ -68,6 +73,7 @@ module top_base (
      * SYSTICK      80000100 - 80000110
      * UART         80000200 - 80000220
      * SPI          80000300 - 80000310
+     * GPIO         80000400 - 80000420
     */
 
     always @(*) begin
@@ -77,6 +83,7 @@ module top_base (
         systick_sel <= 1'b0;
         uart_sel <= 1'b0;
         spi_sel <= 1'b0;
+        gpio_sel <= 1'b0;
 
         if (mem_valid) begin
             if (mem_addr < 32'h1_3000) begin
@@ -91,12 +98,14 @@ module top_base (
                 uart_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0300) && (mem_addr < 32'h8000_0310)) begin
                 spi_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h8000_0400) && (mem_addr < 32'h8000_0420)) begin
+                gpio_sel <= 1'b1;
             end
         end
     end
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (flash_ready | sram_ready | leds_ready | systick_ready | uart_ready | spi_ready);
+    assign mem_ready = mem_valid & (flash_ready | sram_ready | leds_ready | systick_ready | uart_ready | spi_ready | gpio_ready);
 
     /* mem_rdata bus multiplexer */
     assign mem_rdata = flash_sel ? flash_data_o : 
@@ -104,7 +113,8 @@ module top_base (
                         leds_sel ? leds_data_o :
                         systick_sel ? systick_data_o :
                         uart_sel ? uart_data_o :
-                        spi_sel ? spi_data_o : 32'h0;
+                        spi_sel ? spi_data_o :
+                        gpio_sel ? gpio_data_o : 32'h0;
 
     reset_control reset_controller (
         .clk(clk),
@@ -162,8 +172,8 @@ module top_base (
         .data_i(mem_wdata),
         .ready(uart_ready),
         .data_o(uart_data_o),
-        .rx(rx_gpio),
-        .tx(tx_gpio),
+        .rx(uart_rx_gpio),
+        .tx(uart_tx_gpio),
         .irq_rx(uart_rx_irq),
         .irq_tx(uart_tx_irq));
 
@@ -179,6 +189,19 @@ module top_base (
         .spi_cs(spi_cs),
         .spi_clk(spi_clk),
         .spi_mosi(spi_mosi));
+
+    gpio gpio_periph (
+        .clk(clk),
+        .reset_n(reset_n),
+        .select(gpio_sel),
+        .wstrb(mem_wstrb),
+        .addr(mem_addr[4:0]),
+        .data_i(mem_wdata),
+        .ready(gpio_ready),
+        .data_o(gpio_data_o),
+        .gpio(gpio),
+        .gpio_af_in({11'bz, spi_mosi, spi_clk, spi_cs, uart_tx_gpio, 1'bz}),
+        .gpio_af_out({uart_rx_gpio}));
 
     wire trap_unconnected;
     wire mem_la_read_unconnected;
