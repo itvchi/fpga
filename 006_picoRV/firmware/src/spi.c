@@ -30,7 +30,7 @@ typedef union {
 #define SPI         ((Spi_TypeDef *) SPI_BASE)
 
 
-void spi_init() {
+void spi_init(const bool hw_cs) {
 
     SpiConfig_TypeDef *config = (SpiConfig_TypeDef *)&(SPI->CONFIG);
 
@@ -39,7 +39,9 @@ void spi_init() {
 
     config->enable = 1; /* Enable spi */
 
-    gpio_set_mode(GPIO_MODE_AF, 2);
+    if (hw_cs) {
+        gpio_set_mode(GPIO_MODE_AF, 2);
+    }
     gpio_set_mode(GPIO_MODE_AF, 3);
     gpio_set_mode(GPIO_MODE_AF, 4);
 }

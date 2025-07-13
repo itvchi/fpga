@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+
 typedef struct {
     int value;
     bool updated;
@@ -31,7 +32,7 @@ void app_base() {
     systick_add_event(uart_action, (void *)&counter, SYSTICK_PRIO_LOW, 10);
 #endif /* defined(CONFIG_WITH_SYSTICK) */
 #if defined(CONFIG_WITH_SPI)
-    spi_init();
+    spi_init(true);
 #endif /* defined(CONFIG_WITH_SPI) */
 
     while (1) {
