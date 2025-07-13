@@ -30,3 +30,17 @@ void gpio_write(const uint32_t value) {
 
     GPIO->OUT = value;
 }
+
+void gpio_write_pin(const uint32_t gpio, const gpio_state_t value) {
+
+    uint32_t old_value = GPIO->OUT;
+    uint32_t new_value; 
+
+    if (value == GPIO_STATE_LOW) {
+        new_value = (old_value & ~(0b1 << gpio));
+    } else {
+        new_value = (old_value | (0b1 << gpio));
+    }
+
+    GPIO->OUT = new_value;
+}
