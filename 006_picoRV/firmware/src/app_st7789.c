@@ -3,8 +3,14 @@
 #include "spi.h"
 #include "uart.h"
 #include "system.h"
+#include "systick.h"
+#include <stdio.h>
+
 
 void app_st7789() {
+
+    char buffer[64];
+    uint32_t start;
 
     uart_init(F_CPU / (2 * BAUDRATE));
     uart_print_irq("Hello world!\r\n");
@@ -21,8 +27,10 @@ void app_st7789() {
     delay_ms(1000); 
 
     while (1) {
+        start = get_millis();
         ST7789_Test();
-        uart_print_irq("Test done\r\n");
+        sprintf(buffer, "Test done in %ld ms\r\n", get_millis() - start);
+        uart_print_irq(buffer);
     }
 }
 

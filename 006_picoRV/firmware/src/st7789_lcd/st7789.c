@@ -128,7 +128,9 @@ static void ST7789_SetAddressWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint1
 	ST7789_UnSelect();
 }
 
-uint16_t buffer[170*10];
+
+#define BUFFERED_LINES 10
+uint16_t buffer[170*BUFFERED_LINES];
 
 /**
  * @brief Initialize ST7789 controller
@@ -138,8 +140,8 @@ uint16_t buffer[170*10];
 void ST7789_Init(ST7789_Resolution_t resolution, ST7789_Rotation_t rotation)
 {
 	configure(resolution, rotation);
-	lcd_conf.buffered_lines = 10;
-	lcd_conf.buffers_in_height = lcd_conf.height / 10;
+	lcd_conf.buffered_lines = BUFFERED_LINES;
+	lcd_conf.buffers_in_height = lcd_conf.height / BUFFERED_LINES;
 	lcd_conf.display_buffer = buffer; //calloc(lcd_conf.width * lcd_conf.buffered_lines, sizeof(uint16_t));
 
 	delay_ms(25);
@@ -712,7 +714,7 @@ void ST7789_Test(void)
 
 	ST7789_Fill_Color(WHITE);
 	delay_ms(1000);
-	ST7789_WriteString(10, 20, "Speed Test", Font_11x18, RED, WHITE);
+	// ST7789_WriteString(10, 20, "Speed Test", Font_11x18, RED, WHITE);
 	delay_ms(1000);
 
 	for (index = 0; index < (sizeof(color_set)/sizeof(color_16bit_t)); index++) {
@@ -720,39 +722,39 @@ void ST7789_Test(void)
 		delay_ms(500);
 	}
 
-	ST7789_WriteString(10, 10, "Font test.", Font_16x26, GBLUE, WHITE);
-	ST7789_WriteString(10, 50, "Hello Steve!", Font_7x10, RED, WHITE);
-	ST7789_WriteString(10, 75, "Hello Steve!", Font_11x18, YELLOW, WHITE);
-	ST7789_WriteString(10, 100, "Hello Steve!", Font_16x26, MAGENTA, WHITE);
+	// ST7789_WriteString(10, 10, "Font test.", Font_16x26, GBLUE, WHITE);
+	// ST7789_WriteString(10, 50, "Hello Steve!", Font_7x10, RED, WHITE);
+	// ST7789_WriteString(10, 75, "Hello Steve!", Font_11x18, YELLOW, WHITE);
+	// ST7789_WriteString(10, 100, "Hello Steve!", Font_16x26, MAGENTA, WHITE);
 	delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Rect./Line.", Font_11x18, YELLOW, BLACK);
+	// ST7789_WriteString(10, 10, "Rect./Line.", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawRectangle(30, 30, 100, 100, WHITE);
 	delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Filled Rect.", Font_11x18, YELLOW, BLACK);
+	// ST7789_WriteString(10, 10, "Filled Rect.", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawFilledRectangle(30, 30, 50, 50, WHITE);
 	delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Circle.", Font_11x18, YELLOW, BLACK);
+	// ST7789_WriteString(10, 10, "Circle.", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawCircle(60, 60, 25, WHITE);
 	delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Filled Cir.", Font_11x18, YELLOW, BLACK);
+	// ST7789_WriteString(10, 10, "Filled Cir.", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawFilledCircle(60, 60, 25, WHITE);
 	delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Triangle", Font_11x18, YELLOW, BLACK);
+	// ST7789_WriteString(10, 10, "Triangle", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawTriangle(30, 30, 30, 70, 60, 40, WHITE);
 	delay_ms(1000);
 
 	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Filled Tri", Font_11x18, YELLOW, BLACK);
+	// ST7789_WriteString(10, 10, "Filled Tri", Font_11x18, YELLOW, BLACK);
 	ST7789_DrawFilledTriangle(30, 30, 30, 70, 60, 40, WHITE);
 	delay_ms(1000);
 }

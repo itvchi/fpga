@@ -23,6 +23,7 @@ CFLAGS:=\
 LDFLAGS:=\
 	$(TARGET_FLAGS)\
 	-Wl,--gc-sections\
+	--specs=nano.specs\
 	-Tlinker_script.ld
 
 include ../.config
@@ -81,6 +82,14 @@ build_dir:
 
 clean:
 	rm -r $(BUILDDIR)
+
+size:
+	@riscv32-unknown-elf-nm -S --size-sort $(BUILDDIR)/final.elf | \
+	awk '{ \
+	  size = strtonum("0x"$$2); \
+	  hum = (size >= 1024) ? sprintf("%.1fK", size/1024) : size "B"; \
+	  print size "\t(" hum ")\t" $$3 "\t" $$4 \
+	}'
 
 flash: # Changed to custom openFPGALoader which supports user flash for GW1NR-9C
 	openFPGALoaderGowin -b tangnano9k -f ../impl/pnr/picoRV.fs --mcufw $(BUILDDIR)/flash.bin

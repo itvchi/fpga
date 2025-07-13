@@ -29,6 +29,7 @@ void systick_init_irq(uint32_t prescaler, uint32_t value);
 void systick_add_event(systick_cb cb, void *ctx, systick_prio_t prio, uint32_t interval);
 
 uint32_t get_ticks();
+uint32_t get_millis();
 void delay_ms(uint32_t ms);
 
 #endif /* _SYSTICK_H_ */

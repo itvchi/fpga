@@ -122,6 +122,11 @@ uint32_t get_ticks() {
     return __ticks;
 }
 
+uint32_t get_millis() {
+
+    return __ticks * 10;
+}
+
 void delay_ms(uint32_t ms) {
 
     const uint32_t start = __ticks;
