@@ -29,7 +29,7 @@ void app_base() {
     uart_print_irq("Hello world!\r\n");
 #endif /* defined(CONFIG_WITH_UART) */
 #if defined(CONFIG_WITH_SYSTICK)
-    systick_add_event(uart_action, (void *)&counter, SYSTICK_PRIO_LOW, 10);
+    systick_add_event(uart_action, (void *)&counter, SYSTICK_PRIO_LOW, 100);
 #endif /* defined(CONFIG_WITH_SYSTICK) */
 #if defined(CONFIG_WITH_SPI)
     spi_init(true);

@@ -116,3 +116,16 @@ void systick_irq_handler() {
         } 
     }
 }
+
+uint32_t get_ticks() {
+
+    return __ticks;
+}
+
+void delay_ms(uint32_t ms) {
+
+    const uint32_t start = __ticks;
+    ms = ms/10;
+
+    while ((__ticks - start) < ms) {}
+}
