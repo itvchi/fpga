@@ -9,9 +9,10 @@ module systick (
     output reg [31:0] data_o,
     output reg irq);
 
-reg [31:0]      r_config;   /* offset: 0x0  RW */
-reg [31:0]      r_status;   /* offset: 0x4  R  */
-reg [31:0]      r_counter;  /* offset: 0x8  RW */
+reg [31:0]      r_config;       /* offset: 0x0  RW */
+reg [31:0]      r_status;       /* offset: 0x4  R  */
+reg [31:0]      r_counter;      /* offset: 0x8  RW */
+reg [31:0]      r_irq_preload;  /* offset: 0xC  RW */
 
 reg [15:0]      r_prescaler_counter;
 
@@ -47,11 +48,13 @@ end
                         8'h0:   data_o <= r_config;
                         8'h4:   data_o <= r_status;
                         8'h8:   data_o <= r_counter;
+                        8'hC:   data_o <= r_irq_preload;
                     endcase
                 end else begin
                     case (addr)
                         8'h0:   r_config <= data_i;
                         8'h8:   r_counter <= data_i;
+                        8'hC:   r_irq_preload <= data_i;
                     endcase
                 end
                 ready <= 1'b1;
@@ -71,10 +74,12 @@ end
                     if (r_counter) begin
                         r_counter <= r_counter - 32'd1;
                     end else begin
-                        r_config[1] <= 1'b0;
                         r_status[0] <= 1'b0;
                         if (config_irq) begin
                             irq <= 1'b1;
+                            r_counter <= r_irq_preload;
+                        end else begin
+                            r_config[1] <= 1'b0;
                         end
                     end
                 end else begin 

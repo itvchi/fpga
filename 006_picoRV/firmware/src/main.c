@@ -22,8 +22,8 @@ int main() {
     // perf_ram();
     
 #if defined(CONFIG_WITH_SYSTICK)
-    systick_add_event(led_action, (void*)&leds, SYSTICK_PRIO_HIGH, 200);
-    systick_init_irq(0, F_CPU/100);
+    systick_add_event(led_action, (void*)&leds, SYSTICK_PRIO_HIGH, 2000);
+    systick_init_irq(0, F_CPU/1000);
 #endif /* defined(CONFIG_WITH_SYSTICK) */
 
 #if defined(CONFIG_FS_MINIMAL)

@@ -6,6 +6,7 @@ typedef struct {
     volatile uint32_t CONFIG;
     volatile uint32_t STATUS;
     volatile uint32_t COUNTER;  
+    volatile uint32_t IRQ_PRELOAD;  
 } Systick_TypeDef;
 
 typedef union {
@@ -82,6 +83,7 @@ void systick_init_irq(uint32_t prescaler, uint32_t value) {
 
     __counter = value;
     SYSTICK->COUNTER = value;
+    SYSTICK->IRQ_PRELOAD = value;
     config->enable = 1; /* Enable timer */
 }
 
@@ -100,13 +102,15 @@ void systick_add_event(systick_cb cb, void *ctx, systick_prio_t prio, uint32_t i
     }
 }
 
+/* Achived 80us of execution time for no callback tick */
+__attribute__((section(".code_ram")))
+__attribute__((optimize("-O3")))
 void systick_irq_handler() {
 
     systick_prio_t priority;
     size_t idx;
 
     __ticks++;
-    systick_start(__counter);
 
     for (priority = SYSTICK_PRIO_HIGH; priority < __SYSTICK_PRIO_COUNT; priority++) {
         for (idx = 0; idx < CALLBACKS; idx++) {
