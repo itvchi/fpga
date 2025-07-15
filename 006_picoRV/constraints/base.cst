@@ -35,3 +35,13 @@ IO_LOC  "gpio[5]"    47;
 IO_PORT "gpio[5]"    IO_TYPE=LVCMOS33 PULL_MODE=UP;
 IO_LOC  "gpio[6]"    49;
 IO_PORT "gpio[6]"    IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
+/* HW_DBG */
+IO_LOC  "hw_dbg[0]"    30;
+IO_PORT "hw_dbg[0]"    IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "hw_dbg[1]"    31;
+IO_PORT "hw_dbg[1]"    IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "hw_dbg[2]"    32;
+IO_PORT "hw_dbg[2]"    IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "hw_dbg[3]"    33;
+IO_PORT "hw_dbg[3]"    IO_TYPE=LVCMOS33 PULL_MODE=UP;

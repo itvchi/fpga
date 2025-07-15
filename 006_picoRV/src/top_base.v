@@ -2,7 +2,8 @@ module top_base (
     input clk,
     input rst_btn_n,
     output [5:0] leds,
-    inout [7:0] gpio);
+    inout [7:0] gpio,
+    output [3:0] hw_dbg);
     
     parameter BARREL_SHIFTER = 0;
     parameter ENABLE_MUL = 0;
