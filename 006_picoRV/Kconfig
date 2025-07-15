@@ -1,20 +1,39 @@
 choice
+    prompt "Target FPGA"
+    default TANG_NANO_9K
+
+config TANG_NANO_9K
+    bool "Tang Nano 9k"
+    help 
+        Sipeed Tang Nano 9k - FPGA board with Gowin GW1NR-9
+
+config TANG_PRIMER_20K
+    bool "Tang Primer 20k"
+    help 
+        Sipeed Tang Primer 20K - FPGA board with Gowin GW2A
+
+endchoice
+
+choice
     prompt "System version"
     default FS_MINIMAL
 
 config FS_MINIMAL
     bool "Minimal"
+    depends on TANG_NANO_9K || TANG_PRIMER_20K
     help 
         picoRV core with memory mapped leds module
 
 config FS_BASE
     bool "Base"
+    depends on TANG_NANO_9K || TANG_PRIMER_20K
     help 
         picoRV core with memory mapped leds module,
-        sytick and uart
-    
+        sytick and uart and spi
+
 config FS_LCD
     bool "Lcd"
+    depends on TANG_NANO_9K
     help 
         picoRV core with memory mapped leds module,
         sytick, uart and rgb interface lcd driver
