@@ -47,6 +47,16 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
     LAST_USED_BIT = 9,
     VALID_BIT = 8;
 
+    /* Used hot ones encoding because of glitches for outputing (state == STATE_LOAD) on hardware pin
+        maybe not crucial for slower clock, but may cause instabillity with higher clock */
+    localparam
+    CACHE_SET_0 = 1'b0,
+    CACHE_SET_1 = 1'b1,
+    CACHE_SET_INVALID = 1'b0,
+    CACHE_SET_VALID = 1'b1,
+    BIT_UNUSED = 1'b0,
+    BIT_USED = 1'b1;
+
     /* Invalidate cache tags */
     integer i;
     initial begin
@@ -57,18 +67,18 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
 
     /* state machine states */
     localparam 
-    STATE_IDLE = 'd0,
-    STATE_LOAD = 'd1,
-    STATE_SELECT = 'd2,
-    STATE_READ = 'd3,
-    STATE_STORE = 'd4,
-    STATE_DONE = 'd5;
+    STATE_IDLE      = 'b000000,
+    STATE_LOAD      = 'b000010,
+    STATE_SELECT    = 'b000100,
+    STATE_READ      = 'b001000,
+    STATE_STORE     = 'b010000,
+    STATE_DONE      = 'b100000;
 
     /* flash memory constrol signals */
     reg xe = 1'b0;
     reg ye = 1'b0;
     reg se = 1'b0;
-    reg [3:0] state = STATE_IDLE;
+    reg [5:0] state = STATE_IDLE;
     reg [4:0] column;
     reg cache_set;
 
@@ -93,26 +103,26 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
                 STATE_IDLE: begin
                     if (select) begin
                         if (wstrb == 'b0) begin /* Read operation */
-                            if (cache_tag[{1'b0, addr[6:4]}][9:0] == {1'b1, addr[14:7]}) begin /* cache_line valid */
-                                cache_tag[{1'b0, addr[6:4]}][LAST_USED_BIT] <= 1'b1; /* mark this cache_line in set as last used */
-                                cache_tag[{1'b1, addr[6:4]}][LAST_USED_BIT] <= 1'b0; /* and unmark this, what will cause override on next cache miss for this set */
-                                data_o <= cache_line[{1'b0, addr[6:4]}][addr[3:0]]; /* load data from cache_line */
+                            if (cache_tag[{CACHE_SET_0, addr[6:4]}][8:0] == {CACHE_SET_VALID, addr[14:7]}) begin /* cache_line valid */
+                                cache_tag[{CACHE_SET_0, addr[6:4]}][LAST_USED_BIT] <= BIT_USED; /* mark this cache_line in set as last used */
+                                cache_tag[{CACHE_SET_1, addr[6:4]}][LAST_USED_BIT] <= BIT_UNUSED; /* and unmark this, what will cause override on next cache miss for this set */
+                                data_o <= cache_line[{CACHE_SET_0, addr[6:4]}][addr[3:0]]; /* load data from cache_line */
                                 state <= STATE_DONE; /* Go through STATE_DONE to assert ready signal */
                                 cache_hit <= 1'b1;
-                            end else if (cache_tag[{1'b1, addr[6:4]}][9:0] == {1'b1, addr[14:7]}) begin
-                                cache_tag[{1'b1, addr[6:4]}][LAST_USED_BIT] <= 1'b0;
-                                cache_tag[{1'b0, addr[6:4]}][LAST_USED_BIT] <= 1'b1;
-                                data_o <= cache_line[{1'b1, addr[6:4]}][addr[3:0]];
+                            end else if (cache_tag[{CACHE_SET_1, addr[6:4]}][8:0] == {CACHE_SET_VALID, addr[14:7]}) begin
+                                cache_tag[{CACHE_SET_1, addr[6:4]}][LAST_USED_BIT] <= BIT_USED;
+                                cache_tag[{CACHE_SET_0, addr[6:4]}][LAST_USED_BIT] <= BIT_UNUSED;
+                                data_o <= cache_line[{CACHE_SET_1, addr[6:4]}][addr[3:0]];
                                 state <= STATE_DONE;
                                 cache_hit <= 1'b1;
                             end else begin
                                 xe <= 1'b1;
                                 ye <= 1'b1;
                                 column <= 5'd0;
-                                if (cache_tag[{1'b0, addr[6:4]}][LAST_USED_BIT]) begin /* Select active set for operation */                                    
-                                    cache_set <= 1'b1; /* If set 0 is last used override set 1 */
+                                if (cache_tag[{CACHE_SET_0, addr[6:4]}][LAST_USED_BIT]) begin /* Select active set for operation */                                    
+                                    cache_set <= CACHE_SET_1; /* If set 0 is last used override set 1 */
                                 end else begin
-                                    cache_set <= 1'b0; /* Oposite from above */
+                                    cache_set <= CACHE_SET_0; /* Oposite from above */
                                 end
                                 state <= STATE_LOAD;
                                 cache_miss <= 1'b1;
@@ -128,7 +138,7 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
                     xe <= 1'b1;
                     ye <= 1'b1;
                     if (column == 5'b10000) begin /* Last read complete - update tag and return requested data */
-                        cache_tag[{cache_set, addr[6:4]}] = {1'b1, 1'b1, addr[14:7]}; /* also mark last valid bit */
+                        cache_tag[{cache_set, addr[6:4]}] <= {BIT_USED, CACHE_SET_VALID, addr[14:7]}; /* also mark last valid bit */
                         data_o <= cache_line[{cache_set, addr[6:4]}][addr[3:0]];
                         state <= STATE_DONE;
                     end else begin

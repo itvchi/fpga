@@ -135,9 +135,7 @@ module top_base (
         .addr(mem_addr[16:2]), // word address, 9-bits row, 6 bits col
         .data_i(mem_wdata),
         .ready(flash_ready),
-        .data_o(flash_data_o),
-        .cache_hit(cache_hit),
-        .cache_miss(cache_miss));
+        .data_o(flash_data_o));
 
     sram #(.ADDRWIDTH(13)) memory (
         .clk(pll_clk),

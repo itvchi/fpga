@@ -102,7 +102,7 @@ void systick_add_event(systick_cb cb, void *ctx, systick_prio_t prio, uint32_t i
     }
 }
 
-/* Achived 80us of execution time for no callback tick */
+/* Achived 30us (@27MHz clk) of execution time for no callback tick */
 __attribute__((section(".code_ram")))
 __attribute__((optimize("-O3")))
 void systick_irq_handler() {
