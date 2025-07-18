@@ -283,9 +283,13 @@ module uart_rx (
                 end
             end
             STATE_STOP_BIT: begin
-                data <= fsm_data;
-                data_valid <= 1'b1;
-                state <= STATE_STOP_BIT_WAIT;
+                if (clk_en && rx) begin
+                    data <= fsm_data;
+                    data_valid <= 1'b1;
+                    state <= STATE_STOP_BIT_WAIT;
+                end else begin
+                    state <= STATE_STOP_BIT;
+                end
             end
             STATE_STOP_BIT_WAIT: begin /* wait for second clk_en signal for stop bit */
                 if (clk_en) begin

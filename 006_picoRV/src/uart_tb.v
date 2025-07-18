@@ -25,7 +25,7 @@ module uart_tb ();
         .data_i(wdata),
         .ready(ready),
         .data_o(rdata),
-        .rx(rx_tx_loopback),
+        .rx(1'b0),
         .tx(rx_tx_loopback));
 
     /* Generate clock signal */
