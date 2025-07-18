@@ -39,14 +39,26 @@ endif
 endif # ($(CONFIG_FS_LCD),y)
 
 flash: $(FS)
+ifeq ($(CONFIG_TANG_NANO_9K),y)
 	@echo "Flashing picoRV bitstream..."
 	openFPGALoaderGowin -b tangnano9k -f $(FS) --mcufw firmware/build/flash.bin
 # @up: Use custom loader which supports user flash for GW1NR-9C
+else ifeq ($(CONFIG_TANG_PRIMER_20K),y)
+	@echo "Flashing picoRV bitstream..."
+	openFPGALoaderGowin -b tangprimer20k -m $(FS)
+else
+	@echo "Flashing failed - device not supported"
+endif
+
+
 
 firmware:
 	$(MAKE) -C $@
 
-.PHONY: firmware
+bootloader_20k:
+	$(MAKE) -C $@
+
+.PHONY: firmware bootloader_20k
 
 build_dir:
 	mkdir -p $(BUILDDIR)

@@ -12,10 +12,10 @@ reg [31:0] mem [2047:0];
 
 integer i;
 initial begin
-    for (i = 0; i < 1024; i = i + 1) begin
-        mem[i] = 32'd0; 
-        mem[i + 1024] = 32'd0; 
-    end
+    /* For GW1NR-9 this should not be problem, because RAM
+        is updated (and cleared for .bss) by startup code
+        and can contain any data */
+    $readmemh("mem.hex", mem);
 end
 
 always @(posedge clk) begin

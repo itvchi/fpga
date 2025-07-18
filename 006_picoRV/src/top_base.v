@@ -65,9 +65,15 @@ module top_base (
     wire        gpio_ready;
     wire [31:0] gpio_data_o;
 
+    /* ROM memory that shadows first flash memory addresses */
+    localparam  ROM_ENABLE = 1'b1;
+    reg         rom_sel;
+    wire [31:0] rom_data_o;
+    wire        rom_ready;
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
+     * ROM          00000000 - 0000000f
      * FLASH        00000000 - 00012fff
      * SRAM         00020000 - 00021fff
      * MM_LED       80000000
@@ -78,6 +84,7 @@ module top_base (
     */
 
     always @(*) begin
+        rom_sel <= 1'b0;
         flash_sel <= 1'b0;
         sram_sel <= 1'b0;
         leds_sel <= 1'b0;               
@@ -87,7 +94,9 @@ module top_base (
         gpio_sel <= 1'b0;
 
         if (mem_valid) begin
-            if (mem_addr < 32'h1_3000) begin
+            if (ROM_ENABLE && mem_addr < 32'h0_0010) begin
+                rom_sel <= 1'b1;
+            end else if (mem_addr < 32'h1_3000) begin
                 flash_sel <= 1'b1;
             end else if ((mem_addr >= 32'h2_0000) && (mem_addr < 32'h2_2000)) begin
                 sram_sel <= 1'b1;
@@ -106,10 +115,11 @@ module top_base (
     end
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (flash_ready | sram_ready | leds_ready | systick_ready | uart_ready | spi_ready | gpio_ready);
+    assign mem_ready = mem_valid & (rom_ready | flash_ready | sram_ready | leds_ready | systick_ready | uart_ready | spi_ready | gpio_ready);
 
     /* mem_rdata bus multiplexer */
-    assign mem_rdata = flash_sel ? flash_data_o : 
+    assign mem_rdata = rom_sel ? rom_data_o :
+                        flash_sel ? flash_data_o : 
                         sram_sel ? sram_data_o :
                         leds_sel ? leds_data_o :
                         systick_sel ? systick_data_o :
@@ -127,6 +137,16 @@ module top_base (
         .clk(pll_clk),
         .rst_btn_n(rst_btn_n),
         .reset_n(reset_n));
+
+    rom bootrom (
+        .clk(pll_clk),
+        .reset_n(reset_n),
+        .select(rom_sel),
+        .wstrb(mem_wstrb),
+        .addr(mem_addr[3:2]), /* only 4 words */
+        .data_i(mem_wdata),
+        .ready(rom_ready),
+        .data_o(rom_data_o));
 
     user_flash_custom flash (
         .clk(pll_clk),
