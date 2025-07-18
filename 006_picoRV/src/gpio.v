@@ -1,21 +1,28 @@
 module gpio_pin (
+    input clk,
     inout gpio,
-    input af_in,
-    output af_out,
     input [1:0] mode,  // 00=input, 01=output, 10=bridge, 11=reserved
-    output in,
-    input out);
+    output reg in_register,
+    input out_register,
+    input af_oe,
+    input af_for_gpio,
+    output af_from_gpio
+);
 
     wire mode_input   = (mode == 2'b00);
     wire mode_output  = (mode == 2'b01);
     wire mode_bridge  = (mode == 2'b10);
 
-    assign gpio =   mode_output ? out : 
-                    mode_bridge ? af_in : 1'bz;
+    always @(posedge clk) begin
+        if (mode_input) begin
+            in_register <= gpio;
+        end
+    end
 
-    assign af_out = mode_bridge ? gpio : 1'bz;
+    assign af_from_gpio = mode_bridge ? gpio : 1'bz;
 
-    assign in = mode_input ? gpio : 1'b0;
+    assign gpio =   mode_output ? out_register :
+                    (mode_bridge && af_oe) ? af_for_gpio : 1'bz;
 
 endmodule
 
@@ -29,8 +36,9 @@ module gpio (
     output reg ready,
     output reg [31:0] data_o,
     inout [15:0] gpio,
-    input [15:0] gpio_af_in,
-    output [15:0] gpio_af_out);
+    input [15:0] af_oe,
+    input [15:0] af_for_gpio,
+    output [15:0] af_from_gpio);
 
 reg [31:0]      r_mode;         /* offset: 0x00  RW */
 reg [31:0]      r_out;          /* offset: 0x04  RW */
@@ -52,12 +60,14 @@ genvar i;
 generate
     for (i = 0; i < 16; i = i + 1) begin : gpio_inst
         gpio_pin u_gpio_pin (
+            .clk(clk),
             .gpio(gpio[i]),
-            .af_in(gpio_af_in[i]),
-            .af_out(gpio_af_out[i]),
-            .mode(r_mode[2*i +: 2]),
-            .in(gpio_in[i]),
-            .out(r_out[i])
+            .af_oe(af_oe[i]),
+            .af_for_gpio(af_for_gpio[i]),
+            .af_from_gpio(af_from_gpio[i]),
+            .mode(2'b10),
+            .in_register(gpio_in[i]),
+            .out_register(r_out[i])
         );
     end
 endgenerate

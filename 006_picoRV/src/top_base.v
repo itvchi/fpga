@@ -225,8 +225,9 @@ module top_base (
         .ready(gpio_ready),
         .data_o(gpio_data_o),
         .gpio(gpio),
-        .gpio_af_in({11'bz, spi_mosi, spi_clk, spi_cs, uart_tx_gpio, 1'bz}),
-        .gpio_af_out({uart_rx_gpio}));
+        .af_oe({{15{1'b1}}, 1'b0}),
+        .af_for_gpio({{11{1'bz}}, spi_mosi, spi_clk, spi_cs, uart_tx_gpio, 1'bz}),
+        .af_from_gpio({uart_rx_gpio}));
 
     wire trap_unconnected;
     wire mem_la_read_unconnected;
