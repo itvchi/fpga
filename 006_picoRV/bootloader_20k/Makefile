@@ -26,7 +26,7 @@ LDFLAGS:=\
 	-Wl,--gc-sections\
 	-Tlinker_script.ld
 
-SRCS := src/main.c src/leds.c
+SRCS := src/main.c src/leds.c src/uart.c src/gpio.c
 
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
@@ -48,6 +48,7 @@ flash.bin: final.elf
 
 mem.hex: flash.bin
 	od -v -An -t x4 -w4 $(BUILDDIR)/flash.bin > $(BUILDDIR)/mem.hex
+	cp $(BUILDDIR)/mem.hex ../src
 
 build_dir:
 	mkdir -p $(BUILDDIR)
