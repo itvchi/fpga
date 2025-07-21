@@ -153,7 +153,7 @@ module top_base (
         .reset_n(reset_n),
         .select(flash_sel),
         .wstrb(mem_wstrb),
-        .addr(mem_addr[16:2]), // word address, 9-bits row, 6 bits col
+        .addr(mem_addr[16:0]), // byte address, handled inside depending the flash implementation
         .data_i(mem_wdata),
         .ready(flash_ready),
         .data_o(flash_data_o));
