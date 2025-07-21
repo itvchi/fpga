@@ -48,6 +48,23 @@ void uart_init(uint32_t baudrate_prescaler) {
     gpio_set_mode(GPIO_MODE_AF, 1);
 }
 
+bool uart_get(char *data, bool is_blocking) {
+
+    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
+
+    if (is_blocking) {
+        while (!(status->rx_valid));
+    }
+
+    if (is_blocking || status->rx_valid) {
+        status->rx_valid = 0;
+        *data = UART->RX_DATA;
+        return true;
+    }
+
+    return false;
+}
+
 void uart_put(char byte) {
 
     UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
@@ -57,40 +74,14 @@ void uart_put(char byte) {
     UART->TX_DATA = byte;
 }
 
-bool uart_try_get(char *data) {
-
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
-
-    if (status->rx_valid) {
-        status->rx_valid = 0;
-        *data = UART->RX_DATA;
-        return true;
-    }
-
-    return false;
-}
-
-char uart_get() {
-
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
-
-    while (!(status->rx_valid));
-    status->rx_valid = 0;
-
-    return UART->RX_DATA;
-}
-
 void uart_print(char *str) {
 
-    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
-
     while (*str) {
-        while (status->tx_busy || config->irq_tx);
-        UART->TX_DATA = *str;
+        uart_put(*str);
         str++;
     }
 }
+
 
 volatile char *irq_tx_buffer = NULL;
 

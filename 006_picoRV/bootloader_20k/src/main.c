@@ -22,7 +22,7 @@ int main() {
     while (1) {
         set_leds(leds++>>16);
 
-        if (uart_try_get(&cmd)) {
+        if (uart_get(&cmd, false)) {
             switch (cmd) {
                 case 0xCC: /* Start command */
                     uart_put(0xff);
@@ -64,10 +64,10 @@ uint32_t receive_address() {
     uint8_t length;
     char data;
 
-    length = uart_get();
+    uart_get((char *)&length, true);
 
     do {
-        data = uart_get();
+        uart_get(&data, true);
         response = response ^ data;
         address = address << 8 | data;
     } while (--length);
@@ -86,11 +86,11 @@ uint32_t receive_data(uint32_t last_addr) {
     char data;
     char buffer[255];
 
-    length = uart_get();
+    uart_get((char *)&length, true);
     chunk_length = length;
 
     do {
-        data = uart_get();
+        uart_get(&data, true);
         response = response ^ data;
         buffer[i++] = data;
     } while (--length);

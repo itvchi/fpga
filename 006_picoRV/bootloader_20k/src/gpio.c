@@ -14,8 +14,7 @@ typedef struct {
 
 uint32_t gpio_set_mode(const gpio_mode_t mode, const uint32_t gpio) {
 
-    uint32_t old_mode = GPIO->MODE;
-    uint32_t new_mode = (old_mode & ~((0b11) << 2*gpio)) | (mode << 2*gpio);
+    uint32_t new_mode = (GPIO->MODE & ~((0b11) << 2*gpio)) | (mode << 2*gpio);
 
     GPIO->MODE = new_mode;
     return new_mode;

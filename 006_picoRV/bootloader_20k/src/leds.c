@@ -1,13 +1,13 @@
 #include "leds.h"
 
-#define LEDS ((volatile unsigned char *) 0x80000000)
+#define LEDS ((volatile uint32_t *) 0x80000000)
 
-void set_leds(unsigned char val) {
+void set_leds(const uint32_t value) {
 
-    *LEDS = val;
+    *LEDS = value;
 }
 
-unsigned char get_leds(void) {
+uint32_t get_leds(void) {
 
     return *LEDS;
 }

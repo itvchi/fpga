@@ -7,9 +7,8 @@
 #define BAUDRATE    115200
 
 void uart_init(uint32_t baudrate_prescaler); /* baudrate_prescaler = clock_frequency / (2 * baudrate) */
+bool uart_get(char *data, bool is_blocking);
 void uart_put(char byte);
-bool uart_try_get(char *data);
-char uart_get();
 void uart_print(char *str);
 void uart_print_irq(char *buffer);
 
