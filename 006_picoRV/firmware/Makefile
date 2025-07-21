@@ -23,8 +23,7 @@ CFLAGS:=\
 LDFLAGS:=\
 	$(TARGET_FLAGS)\
 	-Wl,--gc-sections\
-	--specs=nano.specs\
-	-Tlinker_script.ld
+	--specs=nano.specs
 
 include ../.config
 
@@ -56,7 +55,12 @@ ifeq ($(CONFIG_WITH_SPI),y)
 	SRCS += src/spi.c
 	CFLAGS += -DCONFIG_WITH_SPI
 endif
-SRCS += src/app_st7789.c src/st7789_lcd/fonts.c src/st7789_lcd/lcd.c src/st7789_lcd/st7789.c
+
+ifeq ($(CONFIG_TANG_NANO_9K),y)
+LDFLAGS+=-Tlinker_script_9k.ld
+else ifeq ($(CONFIG_TANG_PRIMER_20K),y)
+LDFLAGS+=-Tlinker_script_20k.ld
+endif
 
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(BUILDDIR)/_irq.o
