@@ -27,7 +27,9 @@ LDFLAGS:=\
 
 include ../.config
 
-SRCS := src/main.c src/irq.c src/leds.c
+SRCS := src/main.c src/leds.c
+OBJS := $(BUILDDIR)/startup.o
+
 ifeq ($(CONFIG_FS_MINIMAL),y)
 	CFLAGS += -DCONFIG_FS_MINIMAL
 endif
@@ -38,6 +40,11 @@ endif
 ifeq ($(CONFIG_FS_LCD),y)
 	SRCS += src/lcd.c src/app_lcd.c
 	CFLAGS += -DCONFIG_FS_LCD
+endif
+ifeq ($(CONFIG_WITH_IRQ),y)
+	SRCS += src/irq.c
+	OBJS += $(BUILDDIR)/_irq.o
+	CFLAGS += -DCONFIG_WITH_IRQ
 endif
 ifeq ($(CONFIG_WITH_GPIO),y)
 	SRCS += src/gpio.c
@@ -55,6 +62,10 @@ ifeq ($(CONFIG_WITH_SPI),y)
 	SRCS += src/spi.c
 	CFLAGS += -DCONFIG_WITH_SPI
 endif
+ifeq ($(CONFIG_WITH_ST7789),y)
+	SRCS += src/app_st7789.c src/st7789_lcd/fonts.c src/st7789_lcd/lcd.c src/st7789_lcd/st7789.c
+	CFLAGS += -DCONFIG_WITH_ST7789
+endif
 
 ifeq ($(CONFIG_TANG_NANO_9K),y)
 LDFLAGS+=-Tlinker_script_9k.ld
@@ -62,8 +73,6 @@ else ifeq ($(CONFIG_TANG_PRIMER_20K),y)
 LDFLAGS+=-Tlinker_script_20k.ld
 endif
 
-OBJS:=$(BUILDDIR)/startup.o
-OBJS+=$(BUILDDIR)/_irq.o
 OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
 LIBS:=${HOME}/opt/riscv-rv32i/lib/gcc/riscv32-unknown-elf/15.1.0/libgcc.a
 

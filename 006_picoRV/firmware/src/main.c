@@ -29,8 +29,11 @@ int main() {
 #if defined(CONFIG_FS_MINIMAL)
     while (1) {}
 #elif defined(CONFIG_FS_BASE)
-    // app_base();
-    app_st7789();
+    #if defined(CONFIG_WITH_ST7789)
+        app_st7789();
+    #else
+        app_base();
+    #endif
 #elif defined(CONFIG_FS_LCD)
     app_lcd();
 #endif
