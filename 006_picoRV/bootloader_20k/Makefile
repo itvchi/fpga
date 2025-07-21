@@ -57,6 +57,8 @@ clean:
 	rm -r $(BUILDDIR)
 
 size:
+	@riscv32-unknown-elf-size $(BUILDDIR)/final.elf
+	@echo "\nDetailes:"
 	@riscv32-unknown-elf-nm -S --size-sort $(BUILDDIR)/final.elf | \
 	awk '{ \
 	  size = strtonum("0x"$$2); \
