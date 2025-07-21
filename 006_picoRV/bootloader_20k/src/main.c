@@ -13,7 +13,8 @@ int main() {
 
     int leds = 0;
     char cmd;
-    uint32_t address, last_addr;
+    uint32_t address = 0; /* Start command will cause reset if address was not set */
+    uint32_t last_addr = address;
     void (*start_ptr)(void);
 
     uart_init(F_CPU / (2 * BAUDRATE));
