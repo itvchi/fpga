@@ -32,7 +32,7 @@ OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
 LIBS:=${HOME}/opt/riscv-rv32i/lib/gcc/riscv32-unknown-elf/15.1.0/libgcc.a
 
-all: flash.bin mem.hex
+all: flash.bin rom.hex
 
 $(BUILDDIR)/%.o: %.S | build_dir
 	$(CC) $(CFLAGS) -o $@ $<
@@ -46,9 +46,9 @@ final.elf: $(OBJS) | build_dir
 flash.bin: final.elf
 	$(OBJCOPY) -O binary $(BUILDDIR)/$^ $(BUILDDIR)/$@
 
-mem.hex: flash.bin
-	od -v -An -t x4 -w4 $(BUILDDIR)/flash.bin > $(BUILDDIR)/mem.hex
-	cp $(BUILDDIR)/mem.hex ../src
+rom.hex: flash.bin
+	od -v -An -t x4 -w4 $(BUILDDIR)/flash.bin > $(BUILDDIR)/$@
+	cp $(BUILDDIR)/$@ ../src
 
 build_dir:
 	mkdir -p $(BUILDDIR)

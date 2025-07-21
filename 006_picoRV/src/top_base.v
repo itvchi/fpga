@@ -73,7 +73,7 @@ module top_base (
 
     /* Assign slave select signal basing on mem_addr */
     /* Memory map for all slaves:
-     * ROM          00000000 - 0000000f
+     * ROM          00000000 - 000007ff
      * FLASH        00000000 - 00012fff
      * SRAM         00020000 - 00021fff
      * MM_LED       80000000
@@ -94,7 +94,7 @@ module top_base (
         gpio_sel <= 1'b0;
 
         if (mem_valid) begin
-            if (ROM_ENABLE && mem_addr < 32'h0_0010) begin
+            if (ROM_ENABLE && mem_addr < 32'h0_0800) begin
                 rom_sel <= 1'b1;
             end else if (mem_addr < 32'h1_3000) begin
                 flash_sel <= 1'b1;
@@ -143,7 +143,7 @@ module top_base (
         .reset_n(reset_n),
         .select(rom_sel),
         .wstrb(mem_wstrb),
-        .addr(mem_addr[3:2]), /* only 4 words */
+        .addr(mem_addr[10:2]),
         .data_i(mem_wdata),
         .ready(rom_ready),
         .data_o(rom_data_o));
