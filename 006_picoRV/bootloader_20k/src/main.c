@@ -3,49 +3,54 @@
 #include "system.h"
 #include <stdbool.h>
 
-volatile int leds;
-
 /* Bootloader will be placed in ROM or RAM to avoid bitstream generation
     each time the firmware is recompiled (because of SRAM mode of GW2A-18) */
 
 uint32_t receive_address();
-bool receive_data();
+uint32_t receive_data(uint32_t last_addr);
 
 int main() {
 
+    int leds = 0;
     char cmd;
-    uint32_t address;
-    bool last = false;
+    uint32_t address, last_addr;
+    void (*start_ptr)(void);
 
     uart_init(F_CPU / (2 * BAUDRATE));
+    uart_print("Starting bootloader\r\n");
 
     while (1) {
-        set_leds(leds++>>12);
+        set_leds(leds++>>16);
 
         if (uart_try_get(&cmd)) {
             switch (cmd) {
-                case 0xAA:
+                case 0xCC: /* Start command */
+                    uart_put(0xff);
+                    start_ptr = (void *)address;
+                    start_ptr();
+                    while (1) {
+                        leds ^= 0x10101;
+                        set_leds(leds);
+                    }
+                    break;
+                case 0xAA: /* Address command */
                     address = receive_address();
+                    last_addr = address;
                     uart_put(0xff);
                     break;
-                case 0xDD:
-                    last = receive_data();
+                case 0xDD: /* Data command */
+                    last_addr = receive_data(last_addr);
                     uart_put(0xff);
                     break;
-                case 'P':
+                case '?': /* Test command - serial console */
                     uart_print("OK\r\n");
                     break;
                 case '\0':
                     /* Do not response on wake signal */
                     break;
                 default:
-                    uart_print("Unknown command\r\n");
                     break;
             }
-        }
-
-        if (last) {
-            /* all data received */
         }
     }
 
@@ -72,22 +77,29 @@ uint32_t receive_address() {
     return address;
 }
 
-bool receive_data() {
+uint32_t receive_data(uint32_t last_addr) {
 
-    bool last;
+    uint8_t *mem_addr = (uint8_t *)last_addr;
+    uint8_t chunk_length, i = 0;
     uint8_t response = 0;
     uint8_t length;
     char data;
+    char buffer[255];
 
     length = uart_get();
-    last = (length != 255);
+    chunk_length = length;
 
     do {
         data = uart_get();
         response = response ^ data;
+        buffer[i++] = data;
     } while (--length);
 
     uart_put(response);
 
-    return last;
+    for (i = 0; i < chunk_length; i++) {
+        mem_addr[i] = buffer[i];
+    }
+
+    return (last_addr + chunk_length);
 }
