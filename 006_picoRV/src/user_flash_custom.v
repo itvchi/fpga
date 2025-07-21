@@ -45,6 +45,13 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
      * in the set (other cache lines in the set are zeroed then and this cache_lines are preffered to change when cache miss for this set occurs)
      * CACHE_TAG = address[14:7], CACHE_SET = address[6:4], CACHE_LINE_COLUMN = address[3:0] */
     reg [9:0] cache_tag [((C_WAY*C_SETS)-1):0];
+
+    wire [7:0] cache_tag_from_addr;
+    assign cache_tag_from_addr = word_addr[14:7];
+    wire [2:0] cache_set_from_addr;
+    assign cache_set_from_addr = word_addr[6:4];
+    wire [3:0] cache_line_col_from_addr;
+    assign cache_line_col_from_addr = word_addr[3:0];
     
     localparam
     LAST_USED_BIT = 9,
@@ -106,23 +113,23 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
                 STATE_IDLE: begin
                     if (select) begin
                         if (wstrb == 'b0) begin /* Read operation */
-                            if (cache_tag[{CACHE_SET_0, word_addr[6:4]}][8:0] == {CACHE_SET_VALID, word_addr[14:7]}) begin /* cache_line valid */
-                                cache_tag[{CACHE_SET_0, word_addr[6:4]}][LAST_USED_BIT] <= BIT_USED; /* mark this cache_line in set as last used */
-                                cache_tag[{CACHE_SET_1, word_addr[6:4]}][LAST_USED_BIT] <= BIT_UNUSED; /* and unmark this, what will cause override on next cache miss for this set */
-                                data_o <= cache_line[{CACHE_SET_0, word_addr[6:4]}][word_addr[3:0]]; /* load data from cache_line */
+                            if (cache_tag[{CACHE_SET_0, cache_set_from_addr}][8:0] == {CACHE_SET_VALID, cache_tag_from_addr}) begin /* cache_line valid */
+                                cache_tag[{CACHE_SET_0, cache_set_from_addr}][LAST_USED_BIT] <= BIT_USED; /* mark this cache_line in set as last used */
+                                cache_tag[{CACHE_SET_1, cache_set_from_addr}][LAST_USED_BIT] <= BIT_UNUSED; /* and unmark this, what will cause override on next cache miss for this set */
+                                data_o <= cache_line[{CACHE_SET_0, cache_set_from_addr}][cache_line_col_from_addr]; /* load data from cache_line */
                                 state <= STATE_DONE; /* Go through STATE_DONE to assert ready signal */
                                 cache_hit <= 1'b1;
-                            end else if (cache_tag[{CACHE_SET_1, word_addr[6:4]}][8:0] == {CACHE_SET_VALID, word_addr[14:7]}) begin
-                                cache_tag[{CACHE_SET_1, word_addr[6:4]}][LAST_USED_BIT] <= BIT_USED;
-                                cache_tag[{CACHE_SET_0, word_addr[6:4]}][LAST_USED_BIT] <= BIT_UNUSED;
-                                data_o <= cache_line[{CACHE_SET_1, word_addr[6:4]}][word_addr[3:0]];
+                            end else if (cache_tag[{CACHE_SET_1, cache_set_from_addr}][8:0] == {CACHE_SET_VALID, cache_tag_from_addr}) begin
+                                cache_tag[{CACHE_SET_1, cache_set_from_addr}][LAST_USED_BIT] <= BIT_USED;
+                                cache_tag[{CACHE_SET_0, cache_set_from_addr}][LAST_USED_BIT] <= BIT_UNUSED;
+                                data_o <= cache_line[{CACHE_SET_1, cache_set_from_addr}][cache_line_col_from_addr];
                                 state <= STATE_DONE;
                                 cache_hit <= 1'b1;
                             end else begin
                                 xe <= 1'b1;
                                 ye <= 1'b1;
                                 column <= 5'd0;
-                                if (cache_tag[{CACHE_SET_0, word_addr[6:4]}][LAST_USED_BIT]) begin /* Select active set for operation */                                    
+                                if (cache_tag[{CACHE_SET_0, cache_set_from_addr}][LAST_USED_BIT]) begin /* Select active set for operation */                                    
                                     cache_set <= CACHE_SET_1; /* If set 0 is last used override set 1 */
                                 end else begin
                                     cache_set <= CACHE_SET_0; /* Oposite from above */
@@ -137,12 +144,12 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
                         state <= STATE_IDLE;
                     end
                 STATE_LOAD: begin
-                    flash_addr <= {word_addr[14:4], column[3:0]}; /* Set flash address to cache_line beginning */
+                    flash_addr <= {cache_tag_from_addr, cache_set_from_addr, column[3:0]}; /* Set flash address to cache_line beginning */
                     xe <= 1'b1;
                     ye <= 1'b1;
                     if (column == 5'b10000) begin /* Last read complete - update tag and return requested data */
-                        cache_tag[{cache_set, word_addr[6:4]}] <= {BIT_USED, CACHE_SET_VALID, word_addr[14:7]}; /* also mark last valid bit */
-                        data_o <= cache_line[{cache_set, word_addr[6:4]}][word_addr[3:0]];
+                        cache_tag[{cache_set, cache_set_from_addr}] <= {BIT_USED, CACHE_SET_VALID, cache_tag_from_addr}; /* also mark last valid bit */
+                        data_o <= cache_line[{cache_set, cache_set_from_addr}][cache_line_col_from_addr];
                         state <= STATE_DONE;
                     end else begin
                         state <= STATE_SELECT;
@@ -163,7 +170,7 @@ module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
                 STATE_STORE: begin /* Store memory data into cache_line and go next column */
                     xe <= 1'b0;
                     ye <= 1'b0;
-                    cache_line[{cache_set, word_addr[6:4]}][column] <= flash_data_o; /* Update data in cache line */
+                    cache_line[{cache_set, cache_set_from_addr}][column] <= flash_data_o; /* Update data in cache line */
                     column <= column + 5'b1;
                     state <= STATE_LOAD;
                 end
