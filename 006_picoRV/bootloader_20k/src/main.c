@@ -18,7 +18,7 @@ int main() {
     void (*start_ptr)(void);
 
     uart_init(F_CPU / (2 * BAUDRATE));
-    uart_print("Starting bootloader\r\n");
+    uart_print("\r\nStarting bootloader\r\n");
 
     while (1) {
         set_leds(leds++>>16);
@@ -45,6 +45,11 @@ int main() {
                     break;
                 case '?': /* Test command - serial console */
                     uart_print("OK\r\n");
+                    break;
+                case 'R': /* Test command - serial console */
+                    uart_print("RESET\r\n");
+                    start_ptr = 0x0;
+                    start_ptr();
                     break;
                 case '\0':
                     /* Do not response on wake signal */

@@ -38,7 +38,7 @@ SECTIONS
 
     _sicode = LOADADDR(.code_ram);
 
-    .code_ram :
+    .code_ram (NOLOAD) :
     {
         . = ALIGN(4);
         _scode = .;

@@ -1,3 +1,4 @@
+#include "macros.h"
 #include "uart.h"
 #include "gpio.h"
 #include <stddef.h>
@@ -10,54 +11,44 @@ typedef struct {
     volatile uint32_t TX_DATA;  
 } Uart_TypeDef;
 
-typedef union {
-    uint32_t value;
-    struct {
-        uint32_t reset         :  1; /* Reset peripheral */
-        uint32_t enable        :  1; /* Enable uart */
-        uint32_t irq_rx        :  1; /* Enable rx irq */
-        uint32_t irq_tx        :  1; /* Enable tx irq */
-        uint32_t reserved4_31  : 28;
-    };
-} UartConfig_TypeDef;
-
-typedef union {
-    uint32_t value;
-    struct {
-        uint32_t rx_valid      :  1; /* Rx data arrived */
-        uint32_t tx_busy       :  1; /* Tx data sending */
-        uint32_t reserved2_31  : 30;
-    };
-} UartStatus_TypeDef;
-
 #define UART_BASE   0x80000200
 #define UART        ((Uart_TypeDef *) UART_BASE)
+
+#define UART_CONFIG_RESET_BIT_Pos       (0U)
+#define UART_CONFIG_RESET_BIT           (1 << UART_CONFIG_RESET_BIT_Pos)
+#define UART_CONFIG_ENABLE_BIT_Pos      (1U)
+#define UART_CONFIG_ENABLE_BIT          (1 << UART_CONFIG_ENABLE_BIT_Pos)
+#define UART_CONFIG_RX_IRQ_BIT_Pos      (2U)
+#define UART_CONFIG_RX_IRQ_BIT          (1 << UART_CONFIG_RX_IRQ_BIT_Pos)
+#define UART_CONFIG_TX_IRQ_BIT_Pos      (3U)
+#define UART_CONFIG_TX_IRQ_BIT          (1 << UART_CONFIG_TX_IRQ_BIT_Pos)
+
+#define UART_STATUS_RX_VALID_BIT_Pos    (0U)
+#define UART_STATUS_RX_VALID_BIT        (1 << UART_STATUS_RX_VALID_BIT_Pos)
+#define UART_STATUS_TX_BUSY_BIT_Pos     (1U)
+#define UART_STATUS_TX_BUSY_BIT         (1 << UART_STATUS_TX_BUSY_BIT_Pos)
 
 
 void uart_init(uint32_t baudrate_prescaler) {
 
-    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
-
-    config->reset = 1; /* Reset */
-    while (config->reset); /* Wait until reset done */
-
-    UART->BAUD_PRESC = baudrate_prescaler;
-    config->enable = 1; /* Enable uart */
-
     gpio_set_mode(GPIO_MODE_AF, 0);
     gpio_set_mode(GPIO_MODE_AF, 1);
+
+    SET_BIT(UART->CONFIG, UART_CONFIG_RESET_BIT); /* Reset */
+    while (READ_BIT(UART->CONFIG, UART_CONFIG_RESET_BIT)); /* Wait until reset done */
+
+    UART->BAUD_PRESC = baudrate_prescaler;
+    SET_BIT(UART->CONFIG, UART_CONFIG_ENABLE_BIT); /* Enable uart */
 }
 
 bool uart_get(char *data, bool is_blocking) {
 
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
-
     if (is_blocking) {
-        while (!(status->rx_valid));
+        while (!READ_BIT(UART->STATUS, UART_STATUS_RX_VALID_BIT));
     }
 
-    if (is_blocking || status->rx_valid) {
-        status->rx_valid = 0;
+    if (is_blocking || READ_BIT(UART->STATUS, UART_STATUS_RX_VALID_BIT)) {
+        CLEAR_BIT(UART->STATUS, UART_STATUS_RX_VALID_BIT);
         *data = UART->RX_DATA;
         return true;
     }
@@ -67,10 +58,7 @@ bool uart_get(char *data, bool is_blocking) {
 
 void uart_put(char byte) {
 
-    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
-
-    while (status->tx_busy || config->irq_tx);
+    while (READ_BIT(UART->STATUS, UART_STATUS_TX_BUSY_BIT));
     UART->TX_DATA = byte;
 }
 
@@ -79,38 +67,5 @@ void uart_print(char *str) {
     while (*str) {
         uart_put(*str);
         str++;
-    }
-}
-
-
-volatile char *irq_tx_buffer = NULL;
-
-void uart_tx_handler() {
-
-    UartConfig_TypeDef *config;
-
-    if (irq_tx_buffer) {
-        if (*irq_tx_buffer) {
-            UART->TX_DATA = *irq_tx_buffer;
-            irq_tx_buffer++;
-        } else {
-            config = (UartConfig_TypeDef *)&(UART->CONFIG);
-            config->irq_tx = 0; /* Disable tx irq */
-            irq_tx_buffer = NULL;
-        }
-    }
-}
-
-void uart_print_irq(char *buffer) {
-
-    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
-
-    while (status->tx_busy || config->irq_tx); /* Wait until previous data was send or irq mode still enabled */
-    if (buffer[0]) {
-        config->irq_tx = 1; /* Enable tx irq */
-        irq_tx_buffer = &buffer[0];
-        UART->TX_DATA = *irq_tx_buffer;
-        irq_tx_buffer++;
     }
 }

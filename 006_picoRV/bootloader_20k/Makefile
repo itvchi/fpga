@@ -18,7 +18,7 @@ TARGET_FLAGS:=\
 CFLAGS:=\
 	-c -Wall -Wextra\
 	$(TARGET_FLAGS)\
-	-std=gnu11 -O0\
+	-std=gnu11 -Os\
 	-Iinc
 
 LDFLAGS:=\

@@ -7,7 +7,7 @@
 .word _sbss
 .word _ebss
 
-.section  .entry.start
+.section .entry.start, "ax"
 _start:
 	la sp, _estack
 
@@ -31,6 +31,7 @@ DoneCopyDataInit:
 	la t0, _scode
 	la t1, _ecode
 	la t2, _sicode
+	beq t0, t1, DoneCopyCodeInit
 	li t3, 0
 
 LoopCopyCodeInit:
