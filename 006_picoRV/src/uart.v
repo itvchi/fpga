@@ -27,12 +27,12 @@ wire            status_tx_done = r_status[1];
 
 /* baud_generator, uart_rx and uart_tx signals */
 reg baud_enable;
-wire clk_en; /* not used yet */
-wire [7:0] uart_rx_data;
-reg [7:0] uart_tx_data;
-wire data_valid;
 reg new_tx_data;
+reg [7:0] uart_tx_data;
 reg start;
+
+wire [7:0] uart_rx_data;
+wire data_valid;
 wire busy;
 wire tx_done;
 
@@ -42,9 +42,12 @@ initial begin
     r_status <= 32'd0;
     r_rx_data <= 8'd0;
     r_tx_data <= 8'd0;
-    baud_enable <= 1'b0;
     irq_rx <= 1'b0;
     irq_tx <= 1'b0;
+    baud_enable <= 1'b0;
+    new_tx_data <= 1'b0;
+    uart_tx_data <= 8'd0;
+    start <= 1'b0;
 end
 
 always @(posedge clk or negedge reset_n) begin
@@ -57,6 +60,10 @@ always @(posedge clk or negedge reset_n) begin
         irq_rx <= 1'b0;
         irq_tx <= 1'b0;
         ready <= 1'b0;
+        baud_enable <= 1'b0;
+        new_tx_data <= 1'b0;
+        uart_tx_data <= 8'd0;
+        start <= 1'b0;
     end else begin
         ready <= 1'b0;
         r_config <= r_config;
@@ -93,41 +100,47 @@ always @(posedge clk or negedge reset_n) begin
             r_tx_data <= 32'd0;
             irq_rx <= 1'b0;
             irq_tx <= 1'b0;
-        end else if (config_enable) begin
-            /* Enable baud_generator, when r_baud_presc is != 0 */
-            if (r_baud_presc) begin
-                baud_enable <= 1'b1;
-            end else begin
-                baud_enable <= 1'b0;
-            end
+            baud_enable <= 1'b0;
+            new_tx_data <= 1'b0;
+            uart_tx_data <= 8'd0;
+            start <= 1'b0;
+        end else begin  
+            if (config_enable) begin
+                /* Enable baud_generator, when r_baud_presc is != 0 */
+                if (r_baud_presc) begin
+                    baud_enable <= 1'b1;
+                end else begin
+                    baud_enable <= 1'b0;
+                end
 
-            /* Set rx data ready bit in r_status register - set by hardware, reset by software */
-            if (data_valid) begin 
-                r_rx_data <= uart_rx_data;
-                r_status[0] <= 1'b1;
-            end
+                /* Set rx data ready bit in r_status register - set by hardware, reset by software */
+                if (data_valid) begin 
+                    r_rx_data <= uart_rx_data;
+                    r_status[0] <= 1'b1;
+                end
 
-            /* Set tx busy bit in r_status register - set and reset by hardware */
-            if (busy) begin
-                r_status[1] <= 1'b1;
-            end else begin
-                r_status[1] <= 1'b0;
-            end
+                /* Set tx busy bit in r_status register - set and reset by hardware */
+                if (busy) begin
+                    r_status[1] <= 1'b1;
+                end else begin
+                    r_status[1] <= 1'b0;
+                end
 
-            /* Handle start pulse on data write to tx register */
-            if (new_tx_data) begin
-                uart_tx_data <= r_tx_data;
-                start <= 1'b1;
-                new_tx_data <= 1'b0;
-            end else begin
-                start <= 1'b0;
-            end
+                /* Handle start pulse on data write to tx register */
+                if (new_tx_data) begin
+                    uart_tx_data <= r_tx_data;
+                    start <= 1'b1;
+                    new_tx_data <= 1'b0;
+                end else begin
+                    start <= 1'b0;
+                end
 
-            /* Pass tx_done signal outside as interrupt if enabled */
-            if (config_tx_irq) begin
-                irq_tx <= tx_done;
-            end else begin
-                irq_tx <= 1'b0;
+                /* Pass tx_done signal outside as interrupt if enabled */
+                if (config_tx_irq) begin
+                    irq_tx <= tx_done;
+                end else begin
+                    irq_tx <= 1'b0;
+                end
             end
         end
     end
@@ -135,19 +148,21 @@ end
 
 
 reg clk_counter;
+wire clk_en;
+wire clk_en_half;
+assign clk_en_half = clk_en && clk_counter;
 
 initial begin
     clk_counter <= 1'b0;
 end
 
-wire clk_en_half;
-assign clk_en_half = clk_en && clk_counter;
-
 always @(posedge clk) begin
-    if (clk_en) begin 
-        clk_counter <= clk_counter + 1'b1;
+    if (!reset_n) begin
+        clk_counter <= 1'b0;
     end else begin
-        clk_counter <= clk_counter;
+        if (clk_en) begin 
+            clk_counter <= clk_counter + 1'b1;
+        end
     end
 end
 
@@ -162,6 +177,7 @@ baud_generator bg (
 uart_rx serial_rx (
     .clk(clk),
     .clk_en(clk_en),
+    .reset_n(reset_n),
     .rx(rx),
     .data(uart_rx_data),
     .data_valid(data_valid));
@@ -169,6 +185,7 @@ uart_rx serial_rx (
 uart_tx serial_tx (
     .clk(clk),
     .clk_en(clk_en_half),
+    .reset_n(reset_n),
     .start(start),
     .data(uart_tx_data),
     .tx(tx),
@@ -194,20 +211,20 @@ module baud_generator (
 
     initial begin
         counter <= 'd0;
-        clk_en <= 'd0;
+        clk_en <= 1'b0;
     end
 
-    always @(posedge clk or negedge reset_n) begin
+    always @(posedge clk) begin
         if (!reset_n) begin
             counter <= 'd0;
-            clk_en <= 'd0;
+            clk_en <= 1'b0;
         end else if (enable) begin
             if (counter == (ticks - 1)) begin
                 counter <= 'd0;
                 clk_en <= 1'b1;
             end else begin
                 counter <= counter + 'd1;
-                clk_en <= 0;
+                clk_en <= 1'b0;
             end
         end
     end
@@ -218,6 +235,7 @@ endmodule
 module uart_rx (
     input clk,
     input clk_en,
+    input reset_n,
     input rx,
     output reg [7:0] data,
     output reg data_valid);
@@ -238,69 +256,79 @@ module uart_rx (
         state <= STATE_IDLE;
         data_bit <= 2'd0;
         fsm_data <= 8'd0;
+        data <= 8'd0;
+        data_valid <= 1'b0;
     end
 
     /* UART receiver state machine */
     always @(posedge clk) begin
-        /* default assignments */
-        data_valid <= 1'b0;
+        if (!reset_n) begin
+            state <= STATE_IDLE;
+            data_bit <= 2'd0;
+            fsm_data <= 8'd0;
+            data <= 8'd0;
+            data_valid <= 1'b0;
+        end else begin
+            /* default assignments */
+            data_valid <= 1'b0;
 
-        case (state)
-            STATE_IDLE: begin
-                if (rx == 1'b0 && clk_en) begin/* wait for start bit */
-                    data_bit <= 3'd0;
-                    state <= STATE_START_BIT;
-                end else begin
-                    state <= STATE_IDLE;
+            case (state)
+                STATE_IDLE: begin
+                    if (rx == 1'b0 && clk_en) begin/* wait for start bit */
+                        data_bit <= 3'd0;
+                        state <= STATE_START_BIT;
+                    end else begin
+                        state <= STATE_IDLE;
+                    end
                 end
-            end
-            STATE_START_BIT: begin /* state for 1 clock delay */
-                if (clk_en) begin
-                    state <= STATE_READ;
-                end else begin
-                    state <= STATE_START_BIT;
+                STATE_START_BIT: begin /* state for 1 clock delay */
+                    if (clk_en) begin
+                        state <= STATE_READ;
+                    end else begin
+                        state <= STATE_START_BIT;
+                    end
                 end
-            end
-            STATE_READ: begin /* shift data bit to register */
-                if (clk_en) begin
-                    fsm_data <= {rx, fsm_data[7:1]}; /* start append data at MSB, because first send bit is LSB and it will go to LSB at the end */
-                    data_bit <= data_bit + 3'd1;
+                STATE_READ: begin /* shift data bit to register */
+                    if (clk_en) begin
+                        fsm_data <= {rx, fsm_data[7:1]}; /* start append data at MSB, because first send bit is LSB and it will go to LSB at the end */
+                        data_bit <= data_bit + 3'd1;
 
-                    if(data_bit == 3'd7) begin /* end after 7th bit */
-                        state <= STATE_STOP_BIT;
+                        if(data_bit == 3'd7) begin /* end after 7th bit */
+                            state <= STATE_STOP_BIT;
+                        end else begin
+                            state <= STATE_WAIT;
+                        end 
+                    end else begin
+                        state <= STATE_READ;
+                    end
+                end
+                STATE_WAIT: begin /* wait 1 clock cycle */
+                    if (clk_en) begin
+                        state <= STATE_READ;
                     end else begin
                         state <= STATE_WAIT;
-                    end 
-                end else begin
-                    state <= STATE_READ;
+                    end
                 end
-            end
-            STATE_WAIT: begin /* wait 1 clock cycle */
-                if (clk_en) begin
-                    state <= STATE_READ;
-                end else begin
-                    state <= STATE_WAIT;
+                STATE_STOP_BIT: begin
+                    if (clk_en && rx) begin
+                        data <= fsm_data;
+                        data_valid <= 1'b1;
+                        state <= STATE_STOP_BIT_WAIT;
+                    end else begin
+                        state <= STATE_STOP_BIT;
+                    end
                 end
-            end
-            STATE_STOP_BIT: begin
-                if (clk_en && rx) begin
-                    data <= fsm_data;
-                    data_valid <= 1'b1;
-                    state <= STATE_STOP_BIT_WAIT;
-                end else begin
-                    state <= STATE_STOP_BIT;
+                STATE_STOP_BIT_WAIT: begin /* wait for second clk_en signal for stop bit */
+                    if (clk_en) begin
+                        state <= STATE_IDLE;
+                    end else begin
+                        state <= STATE_STOP_BIT_WAIT;
+                    end
                 end
-            end
-            STATE_STOP_BIT_WAIT: begin /* wait for second clk_en signal for stop bit */
-                if (clk_en) begin
+                default: 
                     state <= STATE_IDLE;
-                end else begin
-                    state <= STATE_STOP_BIT_WAIT;
-                end
-            end
-            default: 
-                state <= STATE_IDLE;
-        endcase
+            endcase
+        end
     end
 
 endmodule
@@ -309,6 +337,7 @@ endmodule
 module uart_tx (
     input clk,
     input clk_en,
+    input reset_n,
     input start,
     input [7:0] data,
     output reg tx,
@@ -336,50 +365,59 @@ module uart_tx (
 
     //Transmitter block
     always @(posedge clk) begin
-        tx_done <= 1'b0;
+        if (!reset_n) begin
+            state <= STATE_IDLE;
+            data_bit <= 3'd0;
+            fsm_data <= 8'd0;
+            tx <= 1'b1;
+            tx_done <= 1'b0;
+        end else begin
+            /* default assignments */
+            tx_done <= 1'b0;
 
-        case (state)
-            STATE_IDLE: begin
-                if(start == 1'b1) begin
-                    data_bit <= 1'b0;
-                    fsm_data <= data;
-                    state <= STATE_START_BIT;
-                end else begin
-                    state <= STATE_IDLE;
+            case (state)
+                STATE_IDLE: begin
+                    if(start == 1'b1) begin
+                        data_bit <= 1'b0;
+                        fsm_data <= data;
+                        state <= STATE_START_BIT;
+                    end else begin
+                        state <= STATE_IDLE;
+                    end
                 end
-            end
-            STATE_START_BIT: begin
-                if (clk_en) begin
-                    tx <= 1'b0;
+                STATE_START_BIT: begin
+                    if (clk_en) begin
+                        tx <= 1'b0;
+                        state <= STATE_DATA_BIT;
+                    end else begin
+                        state <= STATE_START_BIT;
+                    end
+                end
+                STATE_DATA_BIT: begin
                     state <= STATE_DATA_BIT;
-                end else begin
-                    state <= STATE_START_BIT;
+
+                    if (clk_en) begin
+                        tx <= fsm_data[data_bit];
+                        data_bit <= data_bit + 3'd1;
+
+                        if(data_bit == 3'd7) begin
+                            state <= STATE_STOP_BIT;
+                        end
+                    end
                 end
-            end
-            STATE_DATA_BIT: begin
-                state <= STATE_DATA_BIT;
-
-                if (clk_en) begin
-                    tx <= fsm_data[data_bit];
-                    data_bit <= data_bit + 3'd1;
-
-                    if(data_bit == 3'd7) begin
+                STATE_STOP_BIT: begin
+                    if (clk_en) begin
+                        tx <= 1'b1;
+                        tx_done <= 1'b1;
+                        state <= STATE_IDLE;
+                    end else begin
                         state <= STATE_STOP_BIT;
                     end
                 end
-            end
-            STATE_STOP_BIT: begin
-                if (clk_en) begin
-                    tx <= 1'b1;
-                    tx_done <= 1'b1;
+                default:
                     state <= STATE_IDLE;
-                end else begin
-                    state <= STATE_STOP_BIT;
-                end
-            end
-            default:
-                state <= STATE_IDLE;
-        endcase
+            endcase
+        end
     end
 
     assign busy = (state != STATE_IDLE);

@@ -75,17 +75,56 @@ module uart_tb ();
     initial begin
         $dumpfile("uart_tb.vcd");
         $dumpvars(0, uart_tb);
-        #20
+        
+        reset_n <= 1'b0;
+        #100
+        reset_n <= 1'b1;
+        #5
+        write(32'h80000200, 32'h00000002); /* reset */
+        #5
         write(32'h80000204, 32'd10); /* configure baud_prescaler */
-        #20
+        #5
         read(32'h80000204);
-        #20
+        #5
         write(32'h80000200, 32'h00000002); /* enable */
         #20
         write(32'h80000210, {24'd0, "a"}); /* tx_data = "a" */
         #600
         write(32'h80000210, {24'd0, "e"}); /* tx_data = "a" */
         #600
+
+        reset_n <= 1'b0;
+        #100
+        reset_n <= 1'b1;
+        #5
+        write(32'h80000200, 32'h00000002); /* reset */
+        #5
+        write(32'h80000204, 32'd10); /* configure baud_prescaler */
+        #5
+        read(32'h80000204);
+        #5
+        write(32'h80000200, 32'h00000002); /* enable */
+        #20
+        write(32'h80000210, {24'd0, "a"}); /* tx_data = "a" */
+        #600
+        write(32'h80000210, {24'd0, "e"}); /* tx_data = "a" */
+        #600
+
+        reset_n <= 1'b0;
+        #100
+        reset_n <= 1'b1;
+        #5
+        write(32'h80000200, 32'h00000002); /* reset */
+        #5
+        write(32'h80000204, 32'd10); /* configure baud_prescaler */
+        #5
+        read(32'h80000204);
+        #5
+        write(32'h80000200, 32'h00000002); /* enable */
+        #20
+        write(32'h80000210, {24'd0, "a"}); /* tx_data = "a" */
+        #600
+        write(32'h80000210, {24'd0, "e"}); /* tx_data = "a" */
         #600
 
         $finish();
