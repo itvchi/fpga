@@ -4,7 +4,7 @@ module mm_leds ( /* Memmory mapped leds */
     input select,
     input [31:0] data_i,
     input write_en,
-    output ready,
+    output reg ready,
     output [31:0] data_o);
 
     reg [5:0] leds = 'b0;
@@ -20,6 +20,9 @@ module mm_leds ( /* Memmory mapped leds */
     end
 
     assign data_o = {26'd0, leds};
-    assign ready = select;
+
+    always @(posedge clk) begin
+        ready <= select;
+    end
 
 endmodule
