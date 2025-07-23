@@ -69,3 +69,23 @@ void uart_print(char *str) {
         str++;
     }
 }
+
+static char hex_to_char(uint8_t value) {
+    if (value < 10) {
+        return value + 0x30;
+    } else {
+        return value - 10 + 0x41;
+    }
+}
+
+void uart_print_hex(const uint32_t value) {
+
+    int idx;
+
+    uart_print("0x");
+
+    for (idx = 28; idx >= 0; idx -= 4) {
+        char nibble = (value >> idx) & 0xF;
+        uart_put(hex_to_char(nibble));
+    }
+}

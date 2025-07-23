@@ -43,6 +43,10 @@ int main() {
                     last_addr = receive_data(last_addr);
                     uart_put(0xff);
                     break;
+                case 'C':
+                    uart_print_hex(leds);
+                    uart_print("\r\n");
+                    break;
                 case '?': /* Test command - serial console */
                     uart_print("OK\r\n");
                     break;
