@@ -19,7 +19,7 @@ typedef struct {
 #define CRC32_CONFIG_DATA_WIDTH_Pos (2U)
 #define CRC32_CONFIG_DATA_WIDTH_Msk (0b11 << CRC32_CONFIG_DATA_WIDTH_Pos)
 
-void crc32_init(crc32_data_in_width_t data_in_width) { /* uint32_t polynomial */
+void crc32_init(crc32_data_in_width_t data_in_width) { /* uint32_t polynomial - currently constant */
 
     SET_BIT(CRC32->CONFIG, CRC32_CONFIG_RESET_BIT); /* Reset */
     while (READ_BIT(CRC32->CONFIG, CRC32_CONFIG_RESET_BIT)); /* Wait until reset done */
@@ -30,7 +30,8 @@ void crc32_init(crc32_data_in_width_t data_in_width) { /* uint32_t polynomial */
 
 void crc32_reset(crc32_data_in_width_t data_in_width) {
 
-    (void) data_in_width;
+    MODIFY_REG(CRC32->CONFIG, CRC32_CONFIG_DATA_WIDTH_Msk, data_in_width << CRC32_CONFIG_DATA_WIDTH_Pos);
+    CRC32->CRC_DATA = 0xFFFFFFFF;
 }
 
 void crc32_push(uint32_t data) {

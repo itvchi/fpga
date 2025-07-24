@@ -1,7 +1,25 @@
+#!/bin/python3
+
 import serial
 import time
 import struct
 from functools import reduce
+
+# CRC-32/BZIP2 setup (no reflection)
+def crc32_bzip2_noref(data: bytes) -> int:
+    poly = 0x04C11DB7
+    crc = 0xFFFFFFFF
+
+    for byte in data:
+        crc ^= byte << 24
+        for _ in range(8):
+            if (crc & 0x80000000):
+                crc = (crc << 1) ^ poly
+            else:
+                crc <<= 1
+            crc &= 0xFFFFFFFF  # Ensure 32-bit width
+
+    return crc ^ 0xFFFFFFFF
 
 # === Configuration ===
 PORT = "/dev/ttyUSB1"
@@ -13,6 +31,7 @@ CMD_START = 0xCC
 CHUNK_SIZE = 200
 FILENAME = "flash.bin"
 LOAD_ADDRESS = 0x00000100  # MSB first
+
 
 # === Load binary file ===
 with open(FILENAME, "rb") as f:
@@ -44,7 +63,15 @@ def calc_expected_response(data: bytes):
     return reduce(lambda a, b: a ^ b, data, 0x00)
 
 def send_command(ser, cmd, data: bytes, label=""):
-    packet = bytearray([cmd, len(data)]) + data
+    if cmd == CMD_DATA and len(data) > 0:
+        crc = crc32_bzip2_noref(data)
+        crc_bytes = crc.to_bytes(4, byteorder="big")
+        packet = bytearray([cmd, len(data)]) + crc_bytes + data
+        print("CRC32 (BZIP2): 0x", ''.join(f"{b:02X}" for b in crc_bytes))
+    else:
+        # CMD_DATA with zero length or other commands
+        packet = bytearray([cmd, len(data)]) + data
+
     print(f"→ {label} CMD 0x{cmd:02X}, {len(data)} bytes")
     ser.write(packet)
 

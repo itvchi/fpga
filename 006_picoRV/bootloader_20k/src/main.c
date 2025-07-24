@@ -7,6 +7,10 @@
 /* Bootloader will be placed in ROM or RAM to avoid bitstream generation
     each time the firmware is recompiled (because of SRAM mode of GW2A-18) */
 
+uint32_t crcs[50];
+uint32_t crc_it;
+
+void cmd_ack();
 uint32_t receive_address();
 uint32_t receive_data(uint32_t last_addr);
 
@@ -29,22 +33,37 @@ int main() {
         if (uart_get(&cmd, false)) {
             switch (cmd) {
                 case 0xCC: /* Start command */
-                    uart_put(0xff);
-                    start_ptr = (void *)address;
-                    start_ptr();
-                    while (1) {
-                        leds ^= 0x10101;
-                        set_leds(leds);
-                    }
+                    cmd_ack();
+                    // start_ptr = (void *)address;
+                    // start_ptr();
                     break;
                 case 0xAA: /* Address command */
                     address = receive_address();
                     last_addr = address;
-                    uart_put(0xff);
+                    cmd_ack();
+                    crc_it = 0;
                     break;
                 case 0xDD: /* Data command */
                     last_addr = receive_data(last_addr);
-                    uart_put(0xff);
+                    cmd_ack();
+                    break;
+                case 'Y':
+                    for (uint32_t idx = 0; idx < crc_it; idx++) {
+                        uart_print_hex(crcs[idx]);
+                        uart_print("\r\n");
+                    }
+                    break;
+                case 'c':
+                    crc32_reset(CRC32_DATA_IN_BYTE);
+                    uart_print("crc32 reset to byte\r\n");
+                    break;
+                case 'd':
+                    crc32_reset(CRC32_DATA_IN_HALF_WORD);
+                    uart_print("crc32 reset to half word\r\n");
+                    break;
+                case 'e':
+                    crc32_reset(CRC32_DATA_IN_WORD);
+                    uart_print("crc32 reset to word\r\n");
                     break;
                 case 'C':
                     uint32_t crc32 = crc32_get();
@@ -77,6 +96,11 @@ int main() {
     return 0;
 }
 
+void cmd_ack() {
+
+    uart_put(0xff);
+}
+
 uint32_t receive_address() {
 
     uint32_t address = 0;
@@ -100,6 +124,7 @@ uint32_t receive_address() {
 uint32_t receive_data(uint32_t last_addr) {
 
     uint8_t *mem_addr = (uint8_t *)last_addr;
+    uint32_t crc32 = 0;
     uint8_t chunk_length, i = 0;
     uint8_t response = 0;
     uint8_t length;
@@ -109,6 +134,13 @@ uint32_t receive_data(uint32_t last_addr) {
     uart_get((char *)&length, true);
     chunk_length = length;
 
+    if (chunk_length) {
+        for (int i = 0; i < 4; i++) {
+            uart_get(&data, true);
+            crc32 = crc32 << 8 | data;
+        }
+    }
+
     do {
         uart_get(&data, true);
         response = response ^ data;
@@ -117,8 +149,14 @@ uint32_t receive_data(uint32_t last_addr) {
 
     uart_put(response);
 
+    crc32_reset(CRC32_DATA_IN_BYTE);
     for (i = 0; i < chunk_length; i++) {
         mem_addr[i] = buffer[i];
+        crc32_push(buffer[i]);
+    }
+
+    if (crc_it < 20) {
+        crcs[crc_it++] = crc32_get();
     }
 
     return (last_addr + chunk_length);
