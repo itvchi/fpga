@@ -16,7 +16,7 @@ module crc32 (
 
     wire            config_reset = r_config[0];
     wire            config_enable = r_config[1];
-    wire            config_width_sel = r_config[3:2];
+    wire [1:0]      config_width_sel = r_config[3:2];
 
     /* Address decoding */
     localparam ADDR_CONFIG = 'h0;
@@ -37,8 +37,7 @@ module crc32 (
     begin
         crc = crc_in;
         num_bytes = (width_sel == 2'b00) ? 1 :
-                (width_sel == 2'b01) ? 2 :
-                (width_sel == 2'b10) ? 4 : 1;
+                (width_sel == 2'b01) ? 2 : 4;
 
         for (i = 0; i < num_bytes; i = i + 1) begin
             byte = (data_in >> (8 * i)) & 8'hFF;
@@ -79,6 +78,7 @@ module crc32 (
                                 r_crc_value <= crc32_update(r_crc_value, data_i, config_width_sel, r_polynomial);
                             end
                         end
+                        ADDR_CRC: r_crc_value <= data_i;
                     endcase
                 end
                 ready <= 1'b1;
