@@ -65,6 +65,10 @@ module top_base (
     wire        gpio_ready;
     wire [31:0] gpio_data_o;
 
+    reg         crc32_sel;
+    wire        crc32_ready;
+    wire [31:0] crc32_data_o;
+
     /* ROM memory that shadows first flash memory addresses */
     localparam  ROM_ENABLE = 1'b1;
     reg         rom_sel;
@@ -81,6 +85,7 @@ module top_base (
      * UART         80000200 - 80000220
      * SPI          80000300 - 80000310
      * GPIO         80000400 - 80000420
+     * CRC32        80000500 - 80000510
     */
 
     always @(*) begin
@@ -92,6 +97,7 @@ module top_base (
         uart_sel <= 1'b0;
         spi_sel <= 1'b0;
         gpio_sel <= 1'b0;
+        crc32_sel <= 1'b0;
 
         if (mem_valid) begin
             if (ROM_ENABLE && mem_addr < 32'h0_0800) begin
@@ -110,12 +116,14 @@ module top_base (
                 spi_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0400) && (mem_addr < 32'h8000_0420)) begin
                 gpio_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h8000_0500) && (mem_addr < 32'h8000_0510)) begin
+                crc32_sel <= 1'b1;
             end
         end
     end
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (rom_ready | flash_ready | sram_ready | leds_ready | systick_ready | uart_ready | spi_ready | gpio_ready);
+    assign mem_ready = mem_valid & (rom_ready | flash_ready | sram_ready | leds_ready | systick_ready | uart_ready | spi_ready | gpio_ready | crc32_ready);
 
     /* mem_rdata bus multiplexer */
     assign mem_rdata = rom_sel ? rom_data_o :
@@ -125,7 +133,8 @@ module top_base (
                         systick_sel ? systick_data_o :
                         uart_sel ? uart_data_o :
                         spi_sel ? spi_data_o :
-                        gpio_sel ? gpio_data_o : 32'h0;
+                        gpio_sel ? gpio_data_o : 
+                        crc32_sel ? crc32_data_o : 32'h0;
 
     wire pll_clk;
 
@@ -228,6 +237,16 @@ module top_base (
         .af_oe({{15{1'b1}}, 1'b0}),
         .af_for_gpio({{11{1'bz}}, spi_mosi, spi_clk, spi_cs, uart_tx_gpio, 1'bz}),
         .af_from_gpio({uart_rx_gpio}));
+
+    crc32 crc_gen (
+        .clk(clk),
+        .reset_n(reset_n),
+        .select(crc32_sel),
+        .wstrb(mem_wstrb),
+        .addr(mem_addr[3:0]),
+        .data_i(mem_wdata),
+        .ready(crc32_ready),
+        .data_o(crc32_data_o));
 
     wire trap_unconnected;
     wire mem_la_read_unconnected;

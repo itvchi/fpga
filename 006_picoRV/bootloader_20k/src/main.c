@@ -2,6 +2,7 @@
 #include "uart.h"
 #include "system.h"
 #include <stdbool.h>
+#include "crc32.h"
 
 /* Bootloader will be placed in ROM or RAM to avoid bitstream generation
     each time the firmware is recompiled (because of SRAM mode of GW2A-18) */
@@ -19,6 +20,8 @@ int main() {
 
     uart_init(F_CPU / (2 * BAUDRATE));
     uart_print("\r\nStarting bootloader\r\n");
+    
+    crc32_init(CRC32_DATA_IN_WORD);
 
     while (1) {
         set_leds(leds++>>16);
@@ -44,7 +47,14 @@ int main() {
                     uart_put(0xff);
                     break;
                 case 'C':
-                    uart_print_hex(leds);
+                    uint32_t crc32 = crc32_get();
+                    uart_print_hex(crc32);
+                    uart_print(" -- ");
+                    uart_print_hex('C');
+                    uart_print(" --> ");
+                    crc32_push('C');
+                    crc32 = crc32_get();
+                    uart_print_hex(crc32);
                     uart_print("\r\n");
                     break;
                 case '?': /* Test command - serial console */

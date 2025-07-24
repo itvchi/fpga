@@ -11,6 +11,7 @@ add_file -type verilog "src/systick.v"
 add_file -type verilog "src/uart.v"
 add_file -type verilog "src/spi.v"
 add_file -type verilog "src/gpio.v"
+add_file -type verilog "src/crc32.v"
 add_file -type cst "constraints/base_20k.cst"
 add_file -type sdc "constraints/common.sdc"
 set_option -synthesis_tool gowinsynthesis
