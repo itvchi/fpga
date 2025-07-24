@@ -48,7 +48,7 @@ flash.bin: final.elf
 
 rom.hex: flash.bin
 	od -v -An -t x4 -w4 $(BUILDDIR)/flash.bin > $(BUILDDIR)/$@
-	cp $(BUILDDIR)/$@ ../src
+	cp $(BUILDDIR)/$@ ../src/mem_files
 
 build_dir:
 	mkdir -p $(BUILDDIR)

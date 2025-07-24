@@ -1,2 +1,3 @@
 006_picoRV.gprj
 .config*
+src/mem_files/*
