@@ -81,7 +81,7 @@ module top_base (
      * FLASH        00000000 - 00012fff
      * SRAM         00020000 - 00021fff
      * MM_LED       80000000
-     * SYSTICK      80000100 - 80000110
+     * SYSTICK      80000100 - 80000120
      * UART         80000200 - 80000220
      * SPI          80000300 - 80000310
      * GPIO         80000400 - 80000420
@@ -108,7 +108,7 @@ module top_base (
                 sram_sel <= 1'b1;
             end else if (mem_addr == 32'h8000_0000) begin
                 leds_sel <= 1'b1;
-            end else if ((mem_addr >= 32'h8000_0100) && (mem_addr < 32'h8000_0110)) begin
+            end else if ((mem_addr >= 32'h8000_0100) && (mem_addr < 32'h8000_0120)) begin
                 systick_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0200) && (mem_addr < 32'h8000_0220)) begin
                 uart_sel <= 1'b1;
@@ -191,7 +191,7 @@ module top_base (
         .reset_n(reset_n),
         .select(systick_sel),
         .wstrb(mem_wstrb),
-        .addr(mem_addr[3:0]),
+        .addr(mem_addr[4:0]),
         .data_i(mem_wdata),
         .ready(systick_ready),
         .data_o(systick_data_o),
