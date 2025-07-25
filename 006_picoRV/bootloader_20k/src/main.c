@@ -3,16 +3,43 @@
 #include "system.h"
 #include <stdbool.h>
 #include "crc32.h"
+#include "systick.h"
 
 /* Bootloader will be placed in ROM or RAM to avoid bitstream generation
     each time the firmware is recompiled (because of SRAM mode of GW2A-18) */
 
-uint32_t crcs[50];
-uint32_t crc_it;
-
 void cmd_ack();
 uint32_t receive_address();
 uint32_t receive_data(uint32_t last_addr);
+
+void timeout_fn() {
+
+    uint32_t leds = 0;
+
+    uart_print("timeout");
+    
+    while (1) {
+        set_leds(leds-->>16);
+    }
+}
+
+void time_update(bool reset) {
+
+    static uint32_t last_ticks;
+    static uint32_t seconds;
+
+    if (reset) {
+        seconds = 0;
+    } else {
+        if (get_ticks() - last_ticks > 1000) {
+            last_ticks = get_ticks();
+            seconds++;
+        }
+        if (seconds > 10) {
+            timeout_fn();
+        }
+    }
+}
 
 int main() {
 
@@ -23,12 +50,17 @@ int main() {
     void (*start_ptr)(void);
 
     uart_init(F_CPU / (2 * BAUDRATE));
-    uart_print("\r\nStarting bootloader\r\n");
+    uart_print("\r\nStarting bootloader (ROM)\r\n");
+
+    systick_init(F_CPU/1000); /* 1ms per tick */
+    time_update(true);
     
     crc32_init(CRC32_DATA_IN_WORD);
 
     while (1) {
         set_leds(leds++>>16);
+
+        time_update(false);
 
         if (uart_get(&cmd, false)) {
             switch (cmd) {
@@ -38,45 +70,17 @@ int main() {
                     // start_ptr();
                     break;
                 case 0xAA: /* Address command */
+                    time_update(true); /* Reset timeout at first try */
                     address = receive_address();
                     last_addr = address;
                     cmd_ack();
-                    crc_it = 0;
                     break;
                 case 0xDD: /* Data command */
                     last_addr = receive_data(last_addr);
                     cmd_ack();
                     break;
-                case 'Y':
-                    for (uint32_t idx = 0; idx < crc_it; idx++) {
-                        uart_print_hex(crcs[idx]);
-                        uart_print("\r\n");
-                    }
-                    break;
-                case 'c':
-                    crc32_reset(CRC32_DATA_IN_BYTE);
-                    uart_print("crc32 reset to byte\r\n");
-                    break;
-                case 'd':
-                    crc32_reset(CRC32_DATA_IN_HALF_WORD);
-                    uart_print("crc32 reset to half word\r\n");
-                    break;
-                case 'e':
-                    crc32_reset(CRC32_DATA_IN_WORD);
-                    uart_print("crc32 reset to word\r\n");
-                    break;
-                case 'C':
-                    uint32_t crc32 = crc32_get();
-                    uart_print_hex(crc32);
-                    uart_print(" -- ");
-                    uart_print_hex('C');
-                    uart_print(" --> ");
-                    crc32_push('C');
-                    crc32 = crc32_get();
-                    uart_print_hex(crc32);
-                    uart_print("\r\n");
-                    break;
                 case '?': /* Test command - serial console */
+                    time_update(true);
                     uart_print("OK\r\n");
                     break;
                 case 'R': /* Test command - serial console */
@@ -153,10 +157,6 @@ uint32_t receive_data(uint32_t last_addr) {
     for (i = 0; i < chunk_length; i++) {
         mem_addr[i] = buffer[i];
         crc32_push(buffer[i]);
-    }
-
-    if (crc_it < 20) {
-        crcs[crc_it++] = crc32_get();
     }
 
     return (last_addr + chunk_length);

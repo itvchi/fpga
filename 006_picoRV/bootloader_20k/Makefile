@@ -26,7 +26,7 @@ LDFLAGS:=\
 	-Wl,--gc-sections\
 	-Tlinker_script.ld
 
-SRCS := src/main.c src/leds.c src/uart.c src/gpio.c src/crc32.c
+SRCS := src/main.c src/leds.c src/uart.c src/gpio.c src/crc32.c src/systick.c
 
 OBJS:=$(BUILDDIR)/startup.o
 OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
