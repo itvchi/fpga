@@ -55,6 +55,7 @@ int main() {
 
     uart_init(F_CPU / (2 * BAUDRATE));
     uart_print("\r\nStarting bootloader (ROM)\r\n");
+    uart2_print("\r\nStarting bootloader (ROM)\r\n");
 
     systick_init(F_CPU/1000); /* 1ms per tick */
     time_update(true);
@@ -170,29 +171,29 @@ uint32_t receive_data(uint32_t last_addr) {
     char data;
     char buffer[255];
 
-    uart_get((char *)&length, true);
-    chunk_length = length;
+    // uart_get((char *)&length, true);
+    // chunk_length = length;
 
-    if (chunk_length) {
-        for (int i = 0; i < 4; i++) {
-            uart_get(&data, true);
-            crc32 = crc32 << 8 | data;
-        }
-    }
+    // if (chunk_length) {
+    //     for (int i = 0; i < 4; i++) {
+    //         uart_get(&data, true);
+    //         crc32 = crc32 << 8 | data;
+    //     }
+    // }
 
-    do {
-        uart_get(&data, true);
-        response = response ^ data;
-        buffer[i++] = data;
-    } while (--length);
+    // do {
+    //     uart_get(&data, true);
+    //     response = response ^ data;
+    //     buffer[i++] = data;
+    // } while (--length);
 
-    uart_put(response);
+    // uart_put(response);
 
-    crc32_reset(CRC32_DATA_IN_BYTE);
-    for (i = 0; i < chunk_length; i++) {
-        mem_addr[i] = buffer[i];
-        crc32_push(buffer[i]);
-    }
+    // crc32_reset(CRC32_DATA_IN_BYTE);
+    // for (i = 0; i < chunk_length; i++) {
+    //     mem_addr[i] = buffer[i];
+    //     crc32_push(buffer[i]);
+    // }
 
     // if (chunk_length) {
     //     if (crc32_get() == crc32) {

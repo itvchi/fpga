@@ -13,6 +13,8 @@ typedef struct {
 
 #define UART_BASE   0x80000200
 #define UART        ((Uart_TypeDef *) UART_BASE)
+#define UART2_BASE   0x80000280
+#define UART2        ((Uart_TypeDef *) UART2_BASE)
 
 #define UART_CONFIG_RESET_BIT_Pos       (0U)
 #define UART_CONFIG_RESET_BIT           (1 << UART_CONFIG_RESET_BIT_Pos)
@@ -39,6 +41,15 @@ void uart_init(uint32_t baudrate_prescaler) {
 
     UART->BAUD_PRESC = baudrate_prescaler;
     SET_BIT(UART->CONFIG, UART_CONFIG_ENABLE_BIT); /* Enable uart */
+
+    gpio_set_mode(GPIO_MODE_AF, 5);
+    gpio_set_mode(GPIO_MODE_AF, 6);
+
+    SET_BIT(UART2->CONFIG, UART_CONFIG_RESET_BIT); /* Reset */
+    while (READ_BIT(UART2->CONFIG, UART_CONFIG_RESET_BIT)); /* Wait until reset done */
+
+    UART2->BAUD_PRESC = baudrate_prescaler;
+    SET_BIT(UART2->CONFIG, UART_CONFIG_ENABLE_BIT); /* Enable uart */
 }
 
 bool uart_get(char *data, bool is_blocking) {
@@ -70,6 +81,20 @@ void uart_print(char *str) {
     }
 }
 
+void uart2_put(char byte) {
+
+    while (READ_BIT(UART2->STATUS, UART_STATUS_TX_BUSY_BIT));
+    UART2->TX_DATA = byte;
+}
+
+void uart2_print(char *str) {
+
+    while (*str) {
+        uart2_put(*str);
+        str++;
+    }
+}
+
 static char hex_to_char(uint8_t value) {
     if (value < 10) {
         return value + 0x30;
@@ -87,5 +112,17 @@ void uart_print_hex(const uint32_t value) {
     for (idx = 28; idx >= 0; idx -= 4) {
         char nibble = (value >> idx) & 0xF;
         uart_put(hex_to_char(nibble));
+    }
+}
+
+void uart2_print_hex(const uint32_t value) {
+
+    int idx;
+
+    uart_print("0x");
+
+    for (idx = 28; idx >= 0; idx -= 4) {
+        char nibble = (value >> idx) & 0xF;
+        uart2_put(hex_to_char(nibble));
     }
 }

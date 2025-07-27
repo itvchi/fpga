@@ -10,6 +10,8 @@ void uart_init(uint32_t baudrate_prescaler); /* baudrate_prescaler = clock_frequ
 bool uart_get(char *data, bool is_blocking);
 void uart_put(char byte);
 void uart_print(char *str);
+void uart2_print(char *str);
 void uart_print_hex(const uint32_t value);
+void uart2_print_hex(const uint32_t value);
 
 #endif /* _UART_H_ */
