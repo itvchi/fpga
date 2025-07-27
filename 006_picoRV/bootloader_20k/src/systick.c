@@ -35,8 +35,7 @@ void systick_init(uint32_t prescaler) {
 
     SYSTICK->COUNTER = 0xFFFFFF;
     SYSTICK->PRELOAD = 0xFFFFFF;
-    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_WRAPS_BIT);
-    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_ENABLE_BIT); /* Enable timer */
+    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_WRAPS_BIT | SYSTICK_CONFIG_ENABLE_BIT); /* Enable timer */
 }
 
 static uint32_t __ticks;
@@ -45,4 +44,11 @@ uint32_t get_ticks() {
 
     __ticks = (0xFFFFFFFF - SYSTICK->COUNTER);
     return __ticks;
+}
+
+void delay(uint32_t ticks) {
+
+    const uint32_t start = get_ticks();
+
+    while ((get_ticks() - start) < ticks) {}
 }

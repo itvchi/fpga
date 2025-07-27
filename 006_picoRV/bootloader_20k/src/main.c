@@ -4,7 +4,7 @@
 #include "crc32.h"
 #include "systick.h"
 
-#define _1S_TIKCS   1000
+#define _1S_TIKCS 1000
 #define TIMEOUT_S 5
 
 /* Bootloader will be placed in ROM or RAM to avoid bitstream generation
@@ -13,24 +13,23 @@
 void send_ack();
 void send_nack();
 bool receive_address(uint32_t *address);
-uint32_t receive_data(uint32_t last_addr);
+bool receive_data(uint32_t *address);
 
-uint8_t ok;
+uint32_t glob_address;
+uint8_t crc_ok;
 
 void timeout_fn() {
 
-    uint32_t leds = (1 << ok);
-
-    uart_print("timeout ");
-    uart_print_hex(ok);
-    
     while (1) {
-        for (uint16_t i = 0; i < 1000; i++) {
-            set_leds(leds);
-        }
-        for (uint16_t i = 0; i < 1000; i++) {
-            set_leds(0x00);
-        }
+        uart2_print("timeout\r\n");
+        set_leds(0x0E);
+        delay(_1S_TIKCS/2);
+        set_leds(0x00);
+        delay(_1S_TIKCS/2);
+        uart_print("\r\n");
+        uart_print_hex(glob_address);
+        // uart_print("\r\nCRC_OK: ");
+        // uart_print_hex(crc_ok);
     }
 }
 
@@ -69,19 +68,27 @@ int main() {
 
         if (uart_get(&cmd, false)) {
             switch (cmd) {
-                case 'M': /* Address command */
+                case 0xAA: /* Address command */
                     time_update(true); /* Reset timeout at first try */
-                    ok = 0;
                     if (receive_address(&address)) {
                         last_addr = address;
+                        glob_address = address;
                         send_ack();
+                        uart2_print("\r\nreceive_address ok\r\n");
+                        uart2_print_hex(address);
                     } else {
                         send_nack();
+                        uart2_print("\r\nreceive_address fails\r\n");
                     }
                     break;
                 case 0xDD: /* Data command */
                     time_update(true); /* Reset timeout each data chunk */
-                    last_addr = receive_data(last_addr);
+                    if (receive_data(&last_addr)) {
+                        crc_ok++;
+                        send_ack();
+                    } else {
+                        send_nack();
+                    }
                     break;
                 case 0xCC: /* Start command */
                     send_ack();
@@ -89,17 +96,11 @@ int main() {
                     // start_ptr = (void *)address;
                     // start_ptr();
                     break;
-                case 'P':
-                    uart_print("Addr: ");
-                    uart_print_hex(address);
-                    uart_print("\r\n");
-                    break;
                 case '?': /* Test command - serial console */
                     time_update(true);
                     uart_print("OK\r\n");
                     break;
                 case 'R': /* Test command - serial console */
-                    uart_print("RESET\r\n");
                     start_ptr = 0x0;
                     start_ptr();
                     break;
@@ -125,35 +126,38 @@ void send_nack() {
     uart_put(0x00);
 }
 
-bool receive_address(uint32_t *address) {
+static bool uart_get_timeout(uint8_t *byte, const uint32_t timeout) {
 
     uint32_t last_ticks = get_ticks();
-    uint32_t recv_address = 0;
-    uint8_t payload_length, response = 0;
-    char data;
 
-    /* Get payload length - 1s timeout */
-    while (!uart_get((char *)&payload_length, false)) {
-        if (get_ticks() - last_ticks > _1S_TIKCS) {
+    while (!uart_get((char *)byte, false)) {
+        if (get_ticks() - last_ticks > timeout) {
             return false;
         }
     }
 
-    ok++;
-    payload_length = 4;
+    return true;
+}
+
+bool receive_address(uint32_t *address) {
+
+    uint32_t recv_address = 0;
+    uint8_t payload_length, response = 0;
+    uint8_t byte;
+
+    /* Get payload length - 1s timeout */
+    if (!uart_get_timeout(&payload_length, _1S_TIKCS)) {
+        return false;
+    }
 
     /* Get address - timeout for each byte */
-    do {
-        last_ticks = get_ticks();
-        while (!uart_get((char *)&data, false)) {
-            if (get_ticks() - last_ticks > _1S_TIKCS) {
-                return false;
-            }
+    while (payload_length--) {
+        if (!uart_get_timeout(&byte, _1S_TIKCS)) {
+            return false;
         }
-        response = response ^ data;
-        recv_address = recv_address << 8 | data;
-        ok++;
-    } while (--payload_length);
+        response = response ^ byte;
+        recv_address = recv_address << 8 | byte;
+    }
 
     uart_put(response);
     *address = recv_address;
@@ -161,49 +165,52 @@ bool receive_address(uint32_t *address) {
     return true;
 }
 
-uint32_t receive_data(uint32_t last_addr) {
+bool receive_data(uint32_t *address) {
 
-    uint8_t *mem_addr = (uint8_t *)last_addr;
-    uint32_t crc32 = 0;
-    uint8_t chunk_length, i = 0;
-    uint8_t response = 0;
-    uint8_t length;
-    char data;
-    char buffer[255];
+    // uint8_t payload_length, length, i, response = 0;
+    // uint8_t buffer[255], byte;
+    // uint8_t *mem_addr = (uint8_t *)address;
+    // uint32_t crc32 = 0;
 
-    // uart_get((char *)&length, true);
-    // chunk_length = length;
-
-    // if (chunk_length) {
-    //     for (int i = 0; i < 4; i++) {
-    //         uart_get(&data, true);
-    //         crc32 = crc32 << 8 | data;
-    //     }
+    // /* Get payload length - 1s timeout */
+    // if (!uart_get_timeout(&payload_length, _1S_TIKCS)) {
+    //     return false;
     // }
 
-    // do {
-    //     uart_get(&data, true);
-    //     response = response ^ data;
-    //     buffer[i++] = data;
-    // } while (--length);
+    // if (payload_length) {
+    //     length = payload_length;
+
+    //     /* Get crc32 of payload - timeout for each byte */
+    //     for (int i = 0; i < 4; i++) {
+    //         if (!uart_get_timeout(&byte, _1S_TIKCS)) {
+    //             return false;
+    //         }
+    //         crc32 = crc32 << 8 | byte;
+    //     }
+
+    //     /* Get payload - timeout for each byte */
+    //     i = 0;
+    //     do {
+    //         if (!uart_get_timeout(&byte, _1S_TIKCS)) {
+    //             return false;
+    //         }
+    //         response = response ^ byte;
+    //         buffer[i++] = byte;
+    //     } while (--length);
+    // }
 
     // uart_put(response);
+    // *address += payload_length;
 
     // crc32_reset(CRC32_DATA_IN_BYTE);
-    // for (i = 0; i < chunk_length; i++) {
+    // for (i = 0; i < payload_length; i++) {
     //     mem_addr[i] = buffer[i];
     //     crc32_push(buffer[i]);
     // }
 
-    // if (chunk_length) {
-    //     if (crc32_get() == crc32) {
-    //         cmd_ack();
-    //     } else {
-    //         cma_nack();
-    //     }
-    // } else {
-    //     cmd_ack();
+    // if (payload_length && crc32_get() != crc32) {
+    //     return false;
     // }
 
-    return (last_addr + chunk_length);
+    return true;
 }
