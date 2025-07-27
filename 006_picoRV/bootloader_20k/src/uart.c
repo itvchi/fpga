@@ -67,24 +67,28 @@ bool uart_get(char *data, bool is_blocking) {
     return false;
 }
 
+static void do_uart_put(Uart_TypeDef *uart, char *byte) {
+
+    while (READ_BIT(uart->STATUS, UART_STATUS_TX_BUSY_BIT));
+    uart->TX_DATA = *byte;
+}
+
 void uart_put(char byte) {
 
-    while (READ_BIT(UART->STATUS, UART_STATUS_TX_BUSY_BIT));
-    UART->TX_DATA = byte;
+    do_uart_put(UART, &byte);
 }
 
-void uart_print(char *str) {
+// void uart_print(char *str) {
 
-    while (*str) {
-        uart_put(*str);
-        str++;
-    }
-}
+//     while (*str) {
+//         uart_put(*str);
+//         str++;
+//     }
+// }
 
 void uart2_put(char byte) {
 
-    while (READ_BIT(UART2->STATUS, UART_STATUS_TX_BUSY_BIT));
-    UART2->TX_DATA = byte;
+    do_uart_put(UART2, &byte);
 }
 
 void uart2_print(char *str) {
@@ -103,23 +107,23 @@ static char hex_to_char(uint8_t value) {
     }
 }
 
-void uart_print_hex(const uint32_t value) {
+// void uart_print_hex(const uint32_t value) {
 
-    int idx;
+//     int idx;
 
-    uart_print("0x");
+//     uart_print("0x");
 
-    for (idx = 28; idx >= 0; idx -= 4) {
-        char nibble = (value >> idx) & 0xF;
-        uart_put(hex_to_char(nibble));
-    }
-}
+//     for (idx = 28; idx >= 0; idx -= 4) {
+//         char nibble = (value >> idx) & 0xF;
+//         uart_put(hex_to_char(nibble));
+//     }
+// }
 
 void uart2_print_hex(const uint32_t value) {
 
-    int idx;
+    uint8_t idx;
 
-    uart_print("0x");
+    uart2_print("0x");
 
     for (idx = 28; idx >= 0; idx -= 4) {
         char nibble = (value >> idx) & 0xF;
