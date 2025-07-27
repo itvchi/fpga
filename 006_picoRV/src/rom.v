@@ -3,13 +3,13 @@ module rom (
     input reset_n,
     input select,
     input [3:0] wstrb,
-    input [8:0]  addr,
+    input [9:0]  addr,
     input [31:0]  data_i,
     output reg ready,
     output reg [31:0] data_o
 );
 
-    reg [31:0] mem [511:0];
+    reg [31:0] mem [1023:0];
 
     initial begin
         $readmemh("mem_files/rom.hex", mem);
@@ -18,7 +18,7 @@ module rom (
     always @(posedge clk) begin
         if (select) begin
             if (wstrb == 4'b0000) begin
-                data_o <= mem[addr[8:0]];
+                data_o <= mem[addr[9:0]];
             end else begin
                 /* ROM is NOT writable */
             end

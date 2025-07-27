@@ -4,7 +4,7 @@ _estack = ORIGIN(RAM) + LENGTH(RAM);
 
 MEMORY
 {
-    ROM     (xr)    : ORIGIN = 0x00000000,   LENGTH = 2K
+    ROM     (xr)    : ORIGIN = 0x00000000,   LENGTH = 4K
     RAM    (xrw)    : ORIGIN = 0x00020000,   LENGTH = 8K
 }
 
