@@ -1,43 +1,47 @@
 #include "leds.h"
 #include "uart.h"
 #include "system.h"
-#include <stdbool.h>
 #include "crc32.h"
 #include "systick.h"
+
+#define _1S_TIKCS   1000
+#define TIMEOUT_S 5
 
 /* Bootloader will be placed in ROM or RAM to avoid bitstream generation
     each time the firmware is recompiled (because of SRAM mode of GW2A-18) */
 
-void cmd_ack();
-uint32_t receive_address();
+void send_ack();
+void send_nack();
+bool receive_address(uint32_t *address);
 uint32_t receive_data(uint32_t last_addr);
+
+uint8_t ok;
 
 void timeout_fn() {
 
-    uint32_t leds = 0;
+    uint32_t leds = (1 << ok);
 
-    uart_print("timeout");
+    uart_print("timeout ");
+    uart_print_hex(ok);
     
     while (1) {
-        set_leds(leds-->>16);
+        for (uint16_t i = 0; i < 1000; i++) {
+            set_leds(leds);
+        }
+        for (uint16_t i = 0; i < 1000; i++) {
+            set_leds(0x00);
+        }
     }
 }
 
 void time_update(bool reset) {
 
     static uint32_t last_ticks;
-    static uint32_t seconds;
 
     if (reset) {
-        seconds = 0;
-    } else {
-        if (get_ticks() - last_ticks > 1000) {
-            last_ticks = get_ticks();
-            seconds++;
-        }
-        if (seconds > 10) {
-            timeout_fn();
-        }
+        last_ticks = get_ticks();
+    } else if (get_ticks() - last_ticks > TIMEOUT_S * _1S_TIKCS) {
+        timeout_fn();
     }
 }
 
@@ -64,20 +68,30 @@ int main() {
 
         if (uart_get(&cmd, false)) {
             switch (cmd) {
+                case 'M': /* Address command */
+                    time_update(true); /* Reset timeout at first try */
+                    ok = 0;
+                    if (receive_address(&address)) {
+                        last_addr = address;
+                        send_ack();
+                    } else {
+                        send_nack();
+                    }
+                    break;
+                case 0xDD: /* Data command */
+                    time_update(true); /* Reset timeout each data chunk */
+                    last_addr = receive_data(last_addr);
+                    break;
                 case 0xCC: /* Start command */
-                    cmd_ack();
+                    send_ack();
+                    // boot();
                     // start_ptr = (void *)address;
                     // start_ptr();
                     break;
-                case 0xAA: /* Address command */
-                    time_update(true); /* Reset timeout at first try */
-                    address = receive_address();
-                    last_addr = address;
-                    cmd_ack();
-                    break;
-                case 0xDD: /* Data command */
-                    last_addr = receive_data(last_addr);
-                    cmd_ack();
+                case 'P':
+                    uart_print("Addr: ");
+                    uart_print_hex(address);
+                    uart_print("\r\n");
                     break;
                 case '?': /* Test command - serial console */
                     time_update(true);
@@ -100,29 +114,50 @@ int main() {
     return 0;
 }
 
-void cmd_ack() {
+void send_ack() {
 
     uart_put(0xff);
 }
 
-uint32_t receive_address() {
+void send_nack() {
 
-    uint32_t address = 0;
-    uint8_t response = 0;
-    uint8_t length;
+    uart_put(0x00);
+}
+
+bool receive_address(uint32_t *address) {
+
+    uint32_t last_ticks = get_ticks();
+    uint32_t recv_address = 0;
+    uint8_t payload_length, response = 0;
     char data;
 
-    uart_get((char *)&length, true);
+    /* Get payload length - 1s timeout */
+    while (!uart_get((char *)&payload_length, false)) {
+        if (get_ticks() - last_ticks > _1S_TIKCS) {
+            return false;
+        }
+    }
 
+    ok++;
+    payload_length = 4;
+
+    /* Get address - timeout for each byte */
     do {
-        uart_get(&data, true);
+        last_ticks = get_ticks();
+        while (!uart_get((char *)&data, false)) {
+            if (get_ticks() - last_ticks > _1S_TIKCS) {
+                return false;
+            }
+        }
         response = response ^ data;
-        address = address << 8 | data;
-    } while (--length);
+        recv_address = recv_address << 8 | data;
+        ok++;
+    } while (--payload_length);
 
     uart_put(response);
+    *address = recv_address;
 
-    return address;
+    return true;
 }
 
 uint32_t receive_data(uint32_t last_addr) {
@@ -158,6 +193,16 @@ uint32_t receive_data(uint32_t last_addr) {
         mem_addr[i] = buffer[i];
         crc32_push(buffer[i]);
     }
+
+    // if (chunk_length) {
+    //     if (crc32_get() == crc32) {
+    //         cmd_ack();
+    //     } else {
+    //         cma_nack();
+    //     }
+    // } else {
+    //     cmd_ack();
+    // }
 
     return (last_addr + chunk_length);
 }
