@@ -31,25 +31,26 @@ typedef struct {
 #define UART_STATUS_TX_BUSY_BIT         (1 << UART_STATUS_TX_BUSY_BIT_Pos)
 
 
+static void do_uart_init(Uart_TypeDef *uart, uint32_t *baudrate_prescaler) {
+
+    SET_BIT(uart->CONFIG, UART_CONFIG_RESET_BIT); /* Reset */
+    while (READ_BIT(uart->CONFIG, UART_CONFIG_RESET_BIT)); /* Wait until reset done */
+
+    uart->BAUD_PRESC = *baudrate_prescaler;
+    SET_BIT(uart->CONFIG, UART_CONFIG_ENABLE_BIT); /* Enable uart */
+}
+
 void uart_init(uint32_t baudrate_prescaler) {
 
     gpio_set_mode(GPIO_MODE_AF, 0);
     gpio_set_mode(GPIO_MODE_AF, 1);
 
-    SET_BIT(UART->CONFIG, UART_CONFIG_RESET_BIT); /* Reset */
-    while (READ_BIT(UART->CONFIG, UART_CONFIG_RESET_BIT)); /* Wait until reset done */
-
-    UART->BAUD_PRESC = baudrate_prescaler;
-    SET_BIT(UART->CONFIG, UART_CONFIG_ENABLE_BIT); /* Enable uart */
-
+    do_uart_init(UART, &baudrate_prescaler);
+    
     gpio_set_mode(GPIO_MODE_AF, 5);
     gpio_set_mode(GPIO_MODE_AF, 6);
-
-    SET_BIT(UART2->CONFIG, UART_CONFIG_RESET_BIT); /* Reset */
-    while (READ_BIT(UART2->CONFIG, UART_CONFIG_RESET_BIT)); /* Wait until reset done */
-
-    UART2->BAUD_PRESC = baudrate_prescaler;
-    SET_BIT(UART2->CONFIG, UART_CONFIG_ENABLE_BIT); /* Enable uart */
+    
+    do_uart_init(UART2, &baudrate_prescaler);
 }
 
 bool uart_get(char *data, bool is_blocking) {
@@ -121,7 +122,7 @@ static char hex_to_char(uint8_t value) {
 
 void uart2_print_hex(const uint32_t value) {
 
-    uint8_t idx;
+    int8_t idx;
 
     uart2_print("0x");
 

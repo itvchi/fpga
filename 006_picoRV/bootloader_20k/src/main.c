@@ -46,7 +46,7 @@ int main() {
     void (*start_ptr)(void);
 
     uart_init(F_CPU / (2 * BAUDRATE));
-    uart2_print("\r\nStarting bootloader (ROM)\r\n");
+    uart2_print("\r\nBoot (ROM)\r\n");
 
     systick_init(F_CPU/1000); /* 1ms per tick */
     time_update(true);
@@ -65,11 +65,12 @@ int main() {
                     if (receive_address(&address)) {
                         last_addr = address;
                         send_ack();
-                        uart2_print("\r\nreceive_address ok\r\n");
+                        uart2_print("addr ok ");
                         uart2_print_hex(address);
+                        uart2_print("\r\n");
                     } else {
                         send_nack();
-                        uart2_print("\r\nreceive_address fails\r\n");
+                        uart2_print("addr err\r\n");
                     }
                     break;
                 case 0xDD: /* Data command */
@@ -85,14 +86,6 @@ int main() {
                     // boot();
                     // start_ptr = (void *)address;
                     // start_ptr();
-                    break;
-                case '?': /* Test command - serial console */
-                    time_update(true);
-                    uart2_print("OK\r\n");
-                    break;
-                case 'R': /* Test command - serial console */
-                    start_ptr = 0x0;
-                    start_ptr();
                     break;
                 case '\0':
                     /* Do not response on wake signal */
@@ -131,14 +124,14 @@ static bool uart_get_timeout(uint8_t *byte, const uint32_t timeout) {
 
 bool receive_address(uint32_t *address) {
 
-    uint32_t recv_address = 0;
-    uint8_t payload_length, response = 0;
-    uint8_t byte;
+    uint8_t payload_length, byte, response = 0;
 
     /* Get payload length - 1s timeout */
     if (!uart_get_timeout(&payload_length, _1S_TIKCS)) {
         return false;
     }
+
+    *address = 0;
 
     /* Get address - timeout for each byte */
     while (payload_length--) {
@@ -146,11 +139,10 @@ bool receive_address(uint32_t *address) {
             return false;
         }
         response = response ^ byte;
-        recv_address = recv_address << 8 | byte;
+        *address = (*address << 8) | byte;
     }
 
     uart_put(response);
-    *address = recv_address;
 
     return true;
 }
@@ -189,18 +181,18 @@ bool receive_data(uint32_t *address) {
         } while (--length);
     }
 
-    // uart_put(response);
-    // *address += payload_length;
+    uart_put(response);
+    *address += payload_length;
 
-    // crc32_reset(CRC32_DATA_IN_BYTE);
-    // for (i = 0; i < payload_length; i++) {
-    //     mem_addr[i] = buffer[i];
-    //     crc32_push(buffer[i]);
-    // }
+    crc32_reset(CRC32_DATA_IN_BYTE);
+    for (i = 0; i < payload_length; i++) {
+        mem_addr[i] = buffer[i];
+        crc32_push(buffer[i]);
+    }
 
-    // if (payload_length && crc32_get() != crc32) {
-    //     return false;
-    // }
+    if (payload_length && (crc32_get() != crc32)) {
+        return false;
+    }
 
     return true;
 }
