@@ -46,13 +46,19 @@ module top_base (
     wire [31:0] systick_data_o;
     wire        systick_irq;
 
-    reg         uart_sel;
-    wire        uart_ready;
-    wire [31:0] uart_data_o;
-    wire        uart_rx_gpio;
-    wire        uart_tx_gpio;
-    wire        uart_rx_irq;
-    wire        uart_tx_irq;
+    reg         uart1_sel;
+    wire        uart1_ready;
+    wire [31:0] uart1_data_o;
+    wire        uart1_rx_gpio;
+    wire        uart1_tx_gpio;
+    wire        uart1_rx_irq;
+    wire        uart1_tx_irq;
+
+    reg         uart2_sel;
+    wire        uart2_ready;
+    wire [31:0] uart2_data_o;
+    wire        uart2_rx_gpio;
+    wire        uart2_tx_gpio;
 
     reg         spi_sel;
     wire        spi_ready;
@@ -82,7 +88,8 @@ module top_base (
      * SRAM         00020000 - 00021fff
      * MM_LED       80000000
      * SYSTICK      80000100 - 80000120
-     * UART         80000200 - 80000220
+     * UART1        80000200 - 80000220
+     * UART2        80000280 - 800002A0
      * SPI          80000300 - 80000310
      * GPIO         80000400 - 80000420
      * CRC32        80000500 - 80000510
@@ -94,7 +101,8 @@ module top_base (
         sram_sel <= 1'b0;
         leds_sel <= 1'b0;               
         systick_sel <= 1'b0;
-        uart_sel <= 1'b0;
+        uart1_sel <= 1'b0;
+        uart2_sel <= 1'b0;
         spi_sel <= 1'b0;
         gpio_sel <= 1'b0;
         crc32_sel <= 1'b0;
@@ -111,7 +119,9 @@ module top_base (
             end else if ((mem_addr >= 32'h8000_0100) && (mem_addr < 32'h8000_0120)) begin
                 systick_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0200) && (mem_addr < 32'h8000_0220)) begin
-                uart_sel <= 1'b1;
+                uart1_sel <= 1'b1;
+            end else if ((mem_addr >= 32'h8000_0280) && (mem_addr < 32'h8000_02A0)) begin
+                uart2_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0300) && (mem_addr < 32'h8000_0310)) begin
                 spi_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0400) && (mem_addr < 32'h8000_0420)) begin
@@ -123,7 +133,7 @@ module top_base (
     end
 
     /* Assign mem_ready signal */
-    assign mem_ready = mem_valid & (rom_ready | flash_ready | sram_ready | leds_ready | systick_ready | uart_ready | spi_ready | gpio_ready | crc32_ready);
+    assign mem_ready = mem_valid & (rom_ready | flash_ready | sram_ready | leds_ready | systick_ready | uart1_ready | uart2_ready | spi_ready | gpio_ready | crc32_ready);
 
     /* mem_rdata bus multiplexer */
     assign mem_rdata = rom_sel ? rom_data_o :
@@ -131,7 +141,8 @@ module top_base (
                         sram_sel ? sram_data_o :
                         leds_sel ? leds_data_o :
                         systick_sel ? systick_data_o :
-                        uart_sel ? uart_data_o :
+                        uart1_sel ? uart1_data_o :
+                        uart2_sel ? uart2_data_o :
                         spi_sel ? spi_data_o :
                         gpio_sel ? gpio_data_o : 
                         crc32_sel ? crc32_data_o : 32'h0;
@@ -197,19 +208,31 @@ module top_base (
         .data_o(systick_data_o),
         .irq(systick_irq));
 
-    uart uart_periph (
+    uart uart1_periph (
         .clk(pll_clk),
         .reset_n(reset_n),
-        .select(uart_sel),
+        .select(uart1_sel),
         .wstrb(mem_wstrb),
         .addr(mem_addr[4:0]),
         .data_i(mem_wdata),
-        .ready(uart_ready),
-        .data_o(uart_data_o),
-        .rx(uart_rx_gpio),
-        .tx(uart_tx_gpio),
-        .irq_rx(uart_rx_irq),
-        .irq_tx(uart_tx_irq));
+        .ready(uart1_ready),
+        .data_o(uart1_data_o),
+        .rx(uart1_rx_gpio),
+        .tx(uart1_tx_gpio),
+        .irq_rx(uart1_rx_irq),
+        .irq_tx(uart1_tx_irq));
+
+    uart uart2_periph (
+        .clk(pll_clk),
+        .reset_n(reset_n),
+        .select(uart2_sel),
+        .wstrb(mem_wstrb),
+        .addr(mem_addr[4:0]),
+        .data_i(mem_wdata),
+        .ready(uart2_ready),
+        .data_o(uart2_data_o),
+        .rx(uart2_rx_gpio),
+        .tx(uart2_tx_gpio));
 
     spi spi_periph (
         .clk(pll_clk),
@@ -224,6 +247,8 @@ module top_base (
         .spi_clk(spi_clk),
         .spi_mosi(spi_mosi));
 
+    wire [4:0] not_connected;
+
     gpio gpio_periph (
         .clk(pll_clk),
         .reset_n(reset_n),
@@ -234,9 +259,9 @@ module top_base (
         .ready(gpio_ready),
         .data_o(gpio_data_o),
         .gpio(gpio),
-        .af_oe({{15{1'b1}}, 1'b0}),
-        .af_for_gpio({{11{1'bz}}, spi_mosi, spi_clk, spi_cs, uart_tx_gpio, 1'bz}),
-        .af_from_gpio({uart_rx_gpio}));
+        .af_oe({{10{1'b1}}, 1'b0, {4{1'b1}}, 1'b0}),
+        .af_for_gpio({{9{1'bz}}, uart2_tx_gpio, 1'bz, spi_mosi, spi_clk, spi_cs, uart1_tx_gpio, 1'bz}),
+        .af_from_gpio({uart2_rx_gpio, not_connected, uart1_rx_gpio}));
 
     crc32 crc_gen (
         .clk(clk),
@@ -285,7 +310,7 @@ module top_base (
         .mem_wdata   (mem_wdata),
         .mem_wstrb   (mem_wstrb),
         .mem_rdata   (mem_rdata),
-        .irq         ({26'b0, uart_tx_irq, uart_rx_irq, systick_irq, 3'b0}),
+        .irq         ({26'b0, uart1_tx_irq, uart1_rx_irq, systick_irq, 3'b0}),
         .trap           (trap_unconnected),
         .mem_la_read    (mem_la_read_unconnected),
         .mem_la_write   (mem_la_write_unconnected),
