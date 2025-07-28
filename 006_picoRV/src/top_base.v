@@ -108,7 +108,7 @@ module top_base (
         crc32_sel <= 1'b0;
 
         if (mem_valid) begin
-            if (ROM_ENABLE && mem_addr < 32'h0_1000) begin
+            if (ROM_ENABLE && (mem_addr < 32'h0_1000)) begin
                 rom_sel <= 1'b1;
             end else if (mem_addr < 32'h1_3000) begin
                 flash_sel <= 1'b1;
