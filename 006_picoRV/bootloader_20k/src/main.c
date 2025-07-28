@@ -12,8 +12,11 @@
 
 void send_ack();
 void send_nack();
-bool receive_address(uint32_t *address);
-bool receive_data(uint32_t *address);
+bool receive_data(bool cmd_address, uint32_t *address);
+
+uint8_t addr_ok;
+uint8_t data_ok;
+uint8_t data_fail;
 
 void timeout_fn() {
 
@@ -62,22 +65,25 @@ int main() {
             switch (cmd) {
                 case 0xAA: /* Address command */
                     time_update(true); /* Reset timeout at first try */
-                    if (receive_address(&address)) {
+                    if (receive_data(true, &address)) {
                         last_addr = address;
-                        send_ack();
-                        uart2_print("addr ok ");
+                        uart2_print("addr ");
                         uart2_print_hex(address);
                         uart2_print("\r\n");
+                        send_ack();
                     } else {
                         send_nack();
-                        uart2_print("addr err\r\n");
                     }
                     break;
                 case 0xDD: /* Data command */
                     time_update(true); /* Reset timeout each data chunk */
-                    if (receive_data(&last_addr)) {
+                    if (receive_data(false, &last_addr)) {
+                        uart2_print("data - new addr ");
+                        uart2_print_hex(last_addr);
+                        uart2_print("\r\n");
                         send_ack();
                     } else {
+                        uart2_print("data - failed\r\n");
                         send_nack();
                     }
                     break;
@@ -122,36 +128,16 @@ static bool uart_get_timeout(uint8_t *byte, const uint32_t timeout) {
     return true;
 }
 
-bool receive_address(uint32_t *address) {
+static uint32_t adress_from_buffer(const uint8_t *buffer) {
 
-    uint8_t payload_length, byte, response = 0;
-
-    /* Get payload length - 1s timeout */
-    if (!uart_get_timeout(&payload_length, _1S_TIKCS)) {
-        return false;
-    }
-
-    *address = 0;
-
-    /* Get address - timeout for each byte */
-    while (payload_length--) {
-        if (!uart_get_timeout(&byte, _1S_TIKCS)) {
-            return false;
-        }
-        response = response ^ byte;
-        *address = (*address << 8) | byte;
-    }
-
-    uart_put(response);
-
-    return true;
+    return buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3];
 }
 
-bool receive_data(uint32_t *address) {
+bool receive_data(bool cmd_address, uint32_t *address) {
 
-    uint8_t payload_length, length, i, response = 0;
-    uint8_t buffer[255], byte;
-    uint8_t *mem_addr = (uint8_t *)address;
+    uint8_t payload_length, length, i, byte;
+    uint8_t buffer[255];
+    uint8_t *mem_addr = (uint8_t *)*address;
     uint32_t crc32 = 0;
 
     /* Get payload length - 1s timeout */
@@ -163,7 +149,7 @@ bool receive_data(uint32_t *address) {
         length = payload_length;
 
         /* Get crc32 of payload - timeout for each byte */
-        for (int i = 0; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             if (!uart_get_timeout(&byte, _1S_TIKCS)) {
                 return false;
             }
@@ -176,22 +162,33 @@ bool receive_data(uint32_t *address) {
             if (!uart_get_timeout(&byte, _1S_TIKCS)) {
                 return false;
             }
-            response = response ^ byte;
             buffer[i++] = byte;
         } while (--length);
     }
 
-    uart_put(response);
-    *address += payload_length;
-
     crc32_reset(CRC32_DATA_IN_BYTE);
     for (i = 0; i < payload_length; i++) {
-        mem_addr[i] = buffer[i];
         crc32_push(buffer[i]);
     }
 
     if (payload_length && (crc32_get() != crc32)) {
         return false;
+    }
+
+    if (cmd_address) {
+        if (payload_length != 4) {
+            return false;
+        }
+        *address = adress_from_buffer(buffer);
+    } else {
+        uart2_print("programming ");
+        uart2_print_hex((uint32_t)mem_addr);
+        uart2_print("\r\n");
+
+        for (i = 0; i < payload_length; i++) {
+            mem_addr[i] = buffer[i];
+        }
+        *address += payload_length;
     }
 
     return true;
