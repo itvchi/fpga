@@ -2,7 +2,7 @@ module spi_master #(
     parameter CLK_FREQ = 27000000,
     parameter SPI_FREQ = 1500000,
     parameter CPOL = 0,
-    parameter CPHA = 1
+    parameter CPHA = 0
 ) (
     input clk,
     input rst_n,
