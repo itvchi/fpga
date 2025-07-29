@@ -4,6 +4,16 @@
 #include "crc32.h"
 #include "systick.h"
 
+#define DEBUG
+
+#ifdef DEBUG
+#define debug_print(x)      uart2_print(x)
+#define debug_print_hex(x)  uart2_print_hex(x)
+#else
+#define debug_print(x)
+#define debug_print_hex(x)
+#endif
+
 #define _1S_TIKCS 1000
 #define TIMEOUT_S 5
 
@@ -14,14 +24,10 @@ void send_ack();
 void send_nack();
 bool receive_data(bool cmd_address, uint32_t *address);
 
-uint8_t addr_ok;
-uint8_t data_ok;
-uint8_t data_fail;
-
 void timeout_fn() {
 
     while (1) {
-        uart2_print("timeout\r\n");
+        debug_print("timeout\r\n");
         set_leds(0x0E);
         delay(_1S_TIKCS/2);
         set_leds(0x00);
@@ -49,7 +55,7 @@ int main() {
     void (*start_ptr)(void);
 
     uart_init(F_CPU / (2 * BAUDRATE));
-    uart2_print("\r\nBoot (ROM)\r\n");
+    debug_print("\r\nBoot (ROM)\r\n");
 
     systick_init(F_CPU/1000); /* 1ms per tick */
     time_update(true);
@@ -67,9 +73,9 @@ int main() {
                     time_update(true); /* Reset timeout at first try */
                     if (receive_data(true, &address)) {
                         last_addr = address;
-                        uart2_print("addr ");
-                        uart2_print_hex(address);
-                        uart2_print("\r\n");
+                        debug_print("addr ");
+                        debug_print_hex(address);
+                        debug_print("\r\n");
                         send_ack();
                     } else {
                         send_nack();
@@ -78,12 +84,12 @@ int main() {
                 case 0xDD: /* Data command */
                     time_update(true); /* Reset timeout each data chunk */
                     if (receive_data(false, &last_addr)) {
-                        uart2_print("data - new addr ");
-                        uart2_print_hex(last_addr);
-                        uart2_print("\r\n");
+                        debug_print("data - new addr ");
+                        debug_print_hex(last_addr);
+                        debug_print("\r\n");
                         send_ack();
                     } else {
-                        uart2_print("data - failed\r\n");
+                        debug_print("data - failed\r\n");
                         send_nack();
                     }
                     break;
@@ -181,9 +187,9 @@ bool receive_data(bool cmd_address, uint32_t *address) {
         }
         *address = adress_from_buffer(buffer);
     } else {
-        uart2_print("programming ");
-        uart2_print_hex((uint32_t)mem_addr);
-        uart2_print("\r\n");
+        debug_print("programming ");
+        debug_print_hex((uint32_t)mem_addr);
+        debug_print("\r\n");
 
         for (i = 0; i < payload_length; i++) {
             mem_addr[i] = buffer[i];
