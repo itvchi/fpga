@@ -95,9 +95,11 @@ int main() {
                     break;
                 case 0xCC: /* Start command */
                     send_ack();
-                    // boot();
-                    // start_ptr = (void *)address;
-                    // start_ptr();
+                    debug_print("booting ");
+                    debug_print_hex(address);
+                    debug_print("\r\n");
+                    start_ptr = (void *)address;
+                    start_ptr();
                     break;
                 case '\0':
                     /* Do not response on wake signal */
