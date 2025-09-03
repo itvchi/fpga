@@ -4,11 +4,8 @@ _estack = ORIGIN(RAM) + LENGTH(RAM);
 
 MEMORY
 {
-    /* Not used yet - TODO :
-    - correct flash address
-    - move bootloader_20k into ROM section */
-    ROM     (xr)    : ORIGIN = 0x00000000,   LENGTH = 1K
-    FLASH   (xr)    : ORIGIN = 0x00010000,   LENGTH = 32K
+    ROM     (xr)    : ORIGIN = 0x00000000,   LENGTH = 4K
+    FLASH   (xr)    : ORIGIN = 0x00001000,   LENGTH = 32K-4K
     RAM    (xrw)    : ORIGIN = 0x00020000,   LENGTH = 8K
 }
 

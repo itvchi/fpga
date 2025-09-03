@@ -6,3 +6,5 @@ Versions:
 - MINIMAL (picoRV core with memory mapped leds module)
 - BASE (as minimal + sytick and uart)
 - LCD (as base + rgb interface lcd driver)
+
+If serial_flash.py does not working with Sipeed RV-debugger Plus exec "sudo modprobe ftdi_sio"

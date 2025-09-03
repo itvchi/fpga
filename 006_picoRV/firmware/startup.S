@@ -10,7 +10,7 @@
 .word _sbss
 .word _ebss
 
-.section  .entry.start
+.section  .entry.start, "ax"
 _start:
 	la sp, _estack
 
