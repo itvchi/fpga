@@ -2,9 +2,9 @@
 #include "uart.h"
 #include "spi.h"
 #include "systick.h"
+#include "leds.h"
 #include <stdio.h>
 #include <stdbool.h>
-
 
 typedef struct {
     int value;
@@ -23,6 +23,11 @@ void app_base() {
     char buffer[64];
     counter_t counter = {};
     char spi_data = 0x00;
+    unsigned int cnt = 0;
+
+    while (1) {
+        set_leds(cnt++ >> 16);
+    }
 
 #if defined(CONFIG_WITH_UART)
     uart_init(F_CPU / (2 * BAUDRATE));
