@@ -4,6 +4,7 @@ import serial
 import time
 import struct
 import os
+import sys
 
 # === CRC-32/BZIP2 (no reflection) ===
 def crc32_bzip2_noref(data: bytes) -> int:
@@ -29,8 +30,12 @@ CMD_START = 0xCC
 CHUNK_SIZE = 200
 LOAD_ADDRESS = 0x00001000
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-FILENAME = os.path.join(SCRIPT_DIR, "build", "flash.bin")
+# === CLI argument for filename ===
+if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+    print(f"Usage: {sys.argv[0]} <path/to/flash.bin>")
+    sys.exit(1)
+
+FILENAME = os.path.abspath(sys.argv[1])
 
 # === Read binary ===
 with open(FILENAME, "rb") as f:
