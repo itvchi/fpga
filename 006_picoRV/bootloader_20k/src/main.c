@@ -14,7 +14,7 @@
 #define debug_print_hex(x)
 #endif
 
-#define _1S_TIKCS 1000
+#define TICKS_PER_1S 1000
 #define TIMEOUT_S 5
 
 /* Bootloader will be placed in ROM or RAM to avoid bitstream generation
@@ -29,9 +29,9 @@ void timeout_fn() {
     while (1) {
         debug_print("timeout\r\n");
         set_leds(0x0E);
-        delay(_1S_TIKCS/2);
+        delay(TICKS_PER_1S/2);
         set_leds(0x00);
-        delay(_1S_TIKCS/2);
+        delay(TICKS_PER_1S/2);
     }
 }
 
@@ -41,7 +41,7 @@ void time_update(bool reset) {
 
     if (reset) {
         last_ticks = get_ticks();
-    } else if (get_ticks() - last_ticks > TIMEOUT_S * _1S_TIKCS) {
+    } else if (get_ticks() - last_ticks > TIMEOUT_S * TICKS_PER_1S) {
         timeout_fn();
     }
 }
@@ -57,7 +57,7 @@ int main() {
     uart_init(F_CPU / (2 * BAUDRATE));
     debug_print("\r\nBoot (ROM)\r\n");
 
-    systick_init(F_CPU/1000); /* 1ms per tick */
+    systick_init(F_CPU/TICKS_PER_1S); /* 1ms per tick */
     time_update(true);
     
     crc32_init(CRC32_DATA_IN_WORD);
@@ -147,7 +147,7 @@ bool receive_data(bool cmd_address, uint32_t *address) {
     uint32_t crc32 = 0;
 
     /* Get payload length - 1s timeout */
-    if (!uart_get_timeout(&payload_length, _1S_TIKCS)) {
+    if (!uart_get_timeout(&payload_length, TICKS_PER_1S)) {
         return false;
     }
 
@@ -156,7 +156,7 @@ bool receive_data(bool cmd_address, uint32_t *address) {
 
         /* Get crc32 of payload - timeout for each byte */
         for (i = 0; i < 4; i++) {
-            if (!uart_get_timeout(&byte, _1S_TIKCS)) {
+            if (!uart_get_timeout(&byte, TICKS_PER_1S)) {
                 return false;
             }
             crc32 = crc32 << 8 | byte;
@@ -165,7 +165,7 @@ bool receive_data(bool cmd_address, uint32_t *address) {
         /* Get payload - timeout for each byte */
         i = 0;
         do {
-            if (!uart_get_timeout(&byte, _1S_TIKCS)) {
+            if (!uart_get_timeout(&byte, TICKS_PER_1S)) {
                 return false;
             }
             buffer[i++] = byte;
