@@ -1,112 +1,127 @@
+#include "macros.h"
 #include "uart.h"
 #include "gpio.h"
 #include <stddef.h>
 
-typedef struct {
-    volatile uint32_t CONFIG;
-    volatile uint32_t BAUD_PRESC;
-    volatile uint32_t STATUS;
-    volatile uint32_t RX_DATA;
-    volatile uint32_t TX_DATA;  
-} Uart_TypeDef;
+#define UART_CONFIG_RESET_BIT_Pos       (0U)
+#define UART_CONFIG_RESET_BIT           (1 << UART_CONFIG_RESET_BIT_Pos)
+#define UART_CONFIG_ENABLE_BIT_Pos      (1U)
+#define UART_CONFIG_ENABLE_BIT          (1 << UART_CONFIG_ENABLE_BIT_Pos)
+#define UART_CONFIG_RX_IRQ_BIT_Pos      (2U)
+#define UART_CONFIG_RX_IRQ_BIT          (1 << UART_CONFIG_RX_IRQ_BIT_Pos)
+#define UART_CONFIG_TX_IRQ_BIT_Pos      (3U)
+#define UART_CONFIG_TX_IRQ_BIT          (1 << UART_CONFIG_TX_IRQ_BIT_Pos)
 
-typedef union {
-    uint32_t value;
-    struct {
-        uint32_t reset         :  1; /* Reset peripheral */
-        uint32_t enable        :  1; /* Enable uart */
-        uint32_t irq_rx        :  1; /* Enable rx irq */
-        uint32_t irq_tx        :  1; /* Enable tx irq */
-        uint32_t reserved4_31  : 28;
-    };
-} UartConfig_TypeDef;
+#define UART_STATUS_RX_VALID_BIT_Pos    (0U)
+#define UART_STATUS_RX_VALID_BIT        (1 << UART_STATUS_RX_VALID_BIT_Pos)
+#define UART_STATUS_TX_BUSY_BIT_Pos     (1U)
+#define UART_STATUS_TX_BUSY_BIT         (1 << UART_STATUS_TX_BUSY_BIT_Pos)
 
-typedef union {
-    uint32_t value;
-    struct {
-        uint32_t rx_valid      :  1; /* Rx data arrived */
-        uint32_t tx_busy       :  1; /* Tx data sending */
-        uint32_t reserved2_31  : 30;
-    };
-} UartStatus_TypeDef;
 
-#define UART_BASE   0x80000200
-#define UART        ((Uart_TypeDef *) UART_BASE)
+static void do_uart_init(Uart_TypeDef *uart, uint32_t *baudrate_prescaler) {
 
+    SET_BIT(uart->CONFIG, UART_CONFIG_RESET_BIT); /* Reset */
+    while (READ_BIT(uart->CONFIG, UART_CONFIG_RESET_BIT)); /* Wait until reset done */
+
+    uart->BAUD_PRESC = *baudrate_prescaler;
+    SET_BIT(uart->CONFIG, UART_CONFIG_ENABLE_BIT); /* Enable uart */
+}
 
 void uart_init(uint32_t baudrate_prescaler) {
 
-    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
-
-    config->reset = 1; /* Reset */
-    while (config->reset); /* Wait until reset done */
-
-    UART->BAUD_PRESC = baudrate_prescaler;
-    config->enable = 1; /* Enable uart */
-
     gpio_set_mode(GPIO_MODE_AF, 0);
     gpio_set_mode(GPIO_MODE_AF, 1);
+
+    do_uart_init(UART, &baudrate_prescaler);
+    
+    gpio_set_mode(GPIO_MODE_AF, 5);
+    gpio_set_mode(GPIO_MODE_AF, 6);
+    
+    do_uart_init(UART2, &baudrate_prescaler);
 }
 
-void uart_put(char byte) {
+// bool uart_get(char *data, bool is_blocking) {
 
-    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
+//     if (is_blocking) {
+//         while (!READ_BIT(UART->STATUS, UART_STATUS_RX_VALID_BIT));
+//     }
 
-    while (status->tx_busy || config->irq_tx);
-    UART->TX_DATA = byte;
+//     if (is_blocking || READ_BIT(UART->STATUS, UART_STATUS_RX_VALID_BIT)) {
+//         CLEAR_BIT(UART->STATUS, UART_STATUS_RX_VALID_BIT);
+//         *data = UART->RX_DATA;
+//         return true;
+//     }
+
+//     return false;
+// }
+
+void uart_put(Uart_TypeDef *uart, char byte) {
+
+    while (READ_BIT(uart->STATUS, UART_STATUS_TX_BUSY_BIT));
+    uart->TX_DATA = byte;
 }
 
-char uart_get() {
-
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
-
-    while (!status->rx_valid);
-    status->rx_valid = 0;
-
-    return UART->RX_DATA;
-}
-
-void uart_print(char *str) {
-
-    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
+void uart_print(Uart_TypeDef *uart, char *str) {
 
     while (*str) {
-        while (status->tx_busy || config->irq_tx);
-        UART->TX_DATA = *str;
+        uart_put(uart, *str);
         str++;
     }
 }
 
+static char hex_to_char(uint8_t value) {
+
+    if (value < 10) {
+        return value + 0x30;
+    } else {
+        return value - 10 + 0x41;
+    }
+}
+
+void uart_print_hex(Uart_TypeDef *uart, const uint32_t value) {
+
+    int8_t idx;
+
+    uart_print(uart, "0x");
+
+    for (idx = 28; idx >= 0; idx -= 4) {
+        char nibble = (value >> idx) & 0xF;
+        uart_put(uart, hex_to_char(nibble));
+    }
+}
+
+/* TODO: Add separate buffer for second uart */
 volatile char *irq_tx_buffer = NULL;
 
-void uart_tx_handler() {
-
-    UartConfig_TypeDef *config;
+void uart_tx_handler(Uart_TypeDef *uart) {
 
     if (irq_tx_buffer) {
         if (*irq_tx_buffer) {
-            UART->TX_DATA = *irq_tx_buffer;
+            uart->TX_DATA = *irq_tx_buffer;
             irq_tx_buffer++;
         } else {
-            config = (UartConfig_TypeDef *)&(UART->CONFIG);
-            config->irq_tx = 0; /* Disable tx irq */
+            CLEAR_BIT(uart->CONFIG, UART_CONFIG_TX_IRQ_BIT); /* Disable tx irq */ 
             irq_tx_buffer = NULL;
         }
     }
 }
 
-void uart_print_irq(char *buffer) {
+void uart1_tx_handler() {
+    uart_tx_handler(UART);
+}
 
-    UartConfig_TypeDef *config = (UartConfig_TypeDef *)&(UART->CONFIG);
-    UartStatus_TypeDef *status = (UartStatus_TypeDef *)&(UART->STATUS);
+void uart2_tx_handler() {
+    uart_tx_handler(UART2);
+}
 
-    while (status->tx_busy || config->irq_tx); /* Wait until previous data was send or irq mode still enabled */
-    if (buffer[0]) {
-        config->irq_tx = 1; /* Enable tx irq */
-        irq_tx_buffer = &buffer[0];
-        UART->TX_DATA = *irq_tx_buffer;
+void uart_print_irq(Uart_TypeDef *uart, char *buffer) {
+
+    /* Wait until previous data was send or irq mode still enabled */
+    while ((uart->STATUS & UART_STATUS_TX_BUSY_BIT) || (uart->CONFIG & UART_CONFIG_TX_IRQ_BIT)); 
+    if (*buffer) {
+        SET_BIT(uart->CONFIG, UART_CONFIG_TX_IRQ_BIT); /* Enable tx irq */
+        irq_tx_buffer = buffer;
+        uart->TX_DATA = *irq_tx_buffer;
         irq_tx_buffer++;
     }
 }

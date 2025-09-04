@@ -10,8 +10,10 @@ static irq_prio_t __irq_prio[__IRQ_COUNT] = {
     IRQ_PRIO_HIGH,  /* IRQ_II */
     IRQ_PRIO_HIGH,  /* IRQ_BUS */
     IRQ_PRIO_LOW,   /* IRQ_SYSTICK */
-    IRQ_PRIO_LOW,   /* IRQ_UART_RX */
-    IRQ_PRIO_LOW,   /* IRQ_UART_TX */
+    IRQ_PRIO_LOW,   /* IRQ_UART1_RX */
+    IRQ_PRIO_LOW,   /* IRQ_UART1_TX */
+    IRQ_PRIO_LOW,   /* IRQ_UART2_RX */
+    IRQ_PRIO_LOW,   /* IRQ_UART2_TX */
 };
 
 static void __default_handler() {
@@ -22,8 +24,10 @@ void __attribute__((weak, alias("__default_handler"))) timer_irq_handler();
 void __attribute__((weak, alias("__default_handler"))) illegal_instr_irq_handler();
 void __attribute__((weak, alias("__default_handler"))) bus_error_irq_handler();
 void __attribute__((weak, alias("__default_handler"))) systick_irq_handler();
-void __attribute__((weak, alias("__default_handler"))) uart_rx_handler();
-void __attribute__((weak, alias("__default_handler"))) uart_tx_handler();
+void __attribute__((weak, alias("__default_handler"))) uart1_rx_handler();
+void __attribute__((weak, alias("__default_handler"))) uart1_tx_handler();
+void __attribute__((weak, alias("__default_handler"))) uart2_rx_handler();
+void __attribute__((weak, alias("__default_handler"))) uart2_tx_handler();
 
 
 void mask_irq(irq_t irq) {
@@ -59,12 +63,20 @@ unsigned int *irq(unsigned int *regs, unsigned int irqs) {
             systick_irq_handler();
         }
 
-        if ((__irq_prio[IRQ_UART_RX] == priority) && (irqs & IRQ_BITMASK(IRQ_UART_RX))) {
-            uart_rx_handler();
+        if ((__irq_prio[IRQ_UART1_RX] == priority) && (irqs & IRQ_BITMASK(IRQ_UART1_RX))) {
+            uart1_rx_handler();
         }
 
-        if ((__irq_prio[IRQ_UART_TX] == priority) && (irqs & IRQ_BITMASK(IRQ_UART_TX))) {
-            uart_tx_handler();
+        if ((__irq_prio[IRQ_UART1_TX] == priority) && (irqs & IRQ_BITMASK(IRQ_UART1_TX))) {
+            uart1_tx_handler();
+        }
+
+        if ((__irq_prio[IRQ_UART2_RX] == priority) && (irqs & IRQ_BITMASK(IRQ_UART2_RX))) {
+            uart2_rx_handler();
+        }
+
+        if ((__irq_prio[IRQ_UART2_TX] == priority) && (irqs & IRQ_BITMASK(IRQ_UART2_TX))) {
+            uart2_tx_handler();
         }
     }
 

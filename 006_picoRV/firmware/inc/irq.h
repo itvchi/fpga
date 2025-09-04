@@ -6,8 +6,10 @@ typedef enum {
     IRQ_II,
     IRQ_BUS,
     IRQ_SYSTICK,
-    IRQ_UART_RX,
-    IRQ_UART_TX,
+    IRQ_UART1_RX,
+    IRQ_UART1_TX,
+    IRQ_UART2_RX,
+    IRQ_UART2_TX,
     __IRQ_COUNT
 } irq_t;
 
