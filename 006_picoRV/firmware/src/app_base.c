@@ -23,15 +23,10 @@ void app_base() {
     char buffer[64];
     counter_t counter = {};
     char spi_data = 0x00;
-    unsigned int cnt = 0;
-
-    while (1) {
-        set_leds(cnt++ >> 16);
-    }
 
 #if defined(CONFIG_WITH_UART)
     uart_init(F_CPU / (2 * BAUDRATE));
-    uart_print_irq("Hello world!\r\n");
+    uart_print_irq(UART2, "Hello world!\r\n");
 #endif /* defined(CONFIG_WITH_UART) */
 #if defined(CONFIG_WITH_SYSTICK)
     systick_add_event(uart_action, (void *)&counter, SYSTICK_PRIO_LOW, 1000);
@@ -45,7 +40,7 @@ void app_base() {
             counter.updated = false;
             sprintf(buffer, "Counter is %d\r\n", counter.value);
 #if defined(CONFIG_WITH_UART)
-            uart_print_irq(buffer);
+            uart_print_irq(UART2, buffer);
 #endif /* defined(CONFIG_WITH_UART) */
         }
 #if defined(CONFIG_WITH_SPI)
