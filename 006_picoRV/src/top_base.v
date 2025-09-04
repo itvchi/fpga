@@ -12,7 +12,7 @@ module top_base (
     parameter ENABLE_COMPRESSED = 0;
     parameter ENABLE_IRQ = 1;
     parameter ENABLE_IRQ_QREGS = 1;
-    parameter MASKED_IRQ = 32'hffff_ffc0;
+    parameter MASKED_IRQ = 32'hffff_ff00;
     parameter LATCHED_IRQ = 32'hffff_ffff;
 
     parameter integer MEMBYTES = 8192;
@@ -59,6 +59,8 @@ module top_base (
     wire [31:0] uart2_data_o;
     wire        uart2_rx_gpio;
     wire        uart2_tx_gpio;
+    wire        uart2_rx_irq;
+    wire        uart2_tx_irq;
 
     reg         spi_sel;
     wire        spi_ready;
@@ -232,7 +234,9 @@ module top_base (
         .ready(uart2_ready),
         .data_o(uart2_data_o),
         .rx(uart2_rx_gpio),
-        .tx(uart2_tx_gpio));
+        .tx(uart2_tx_gpio),
+        .irq_rx(uart2_rx_irq),
+        .irq_tx(uart2_tx_irq));
 
     spi spi_periph (
         .clk(pll_clk),
@@ -310,7 +314,7 @@ module top_base (
         .mem_wdata   (mem_wdata),
         .mem_wstrb   (mem_wstrb),
         .mem_rdata   (mem_rdata),
-        .irq         ({26'b0, uart1_tx_irq, uart1_rx_irq, systick_irq, 3'b0}),
+        .irq         ({24'b0, uart2_tx_irq, uart2_rx_irq, uart1_tx_irq, uart1_rx_irq, systick_irq, 3'b0}),
         .trap           (trap_unconnected),
         .mem_la_read    (mem_la_read_unconnected),
         .mem_la_write   (mem_la_write_unconnected),
