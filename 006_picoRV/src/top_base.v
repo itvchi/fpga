@@ -18,7 +18,7 @@ module top_base (
     parameter integer MEMBYTES = 8192;
     parameter [31:0] STACKADDR = 32'h0002_0000 + (MEMBYTES);
     parameter [31:0] PROGADDR_RESET = 32'h0000_0000;    
-    parameter [31:0] PROGADDR_IRQ = 32'h0000_0100;
+    parameter [31:0] PROGADDR_IRQ = 32'h0000_1100; /* 0x100 offset to flash base address (needs to offset register implementation) */
 
     wire        reset_n; 
     wire [31:0] mem_addr;
