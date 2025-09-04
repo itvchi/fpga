@@ -1,3 +1,4 @@
+#include "macros.h"
 #include "systick.h"
 #include "irq.h"
 #include <stddef.h>
@@ -5,86 +6,69 @@
 typedef struct {
     volatile uint32_t CONFIG;
     volatile uint32_t STATUS;
-    volatile uint32_t COUNTER;  
-    volatile uint32_t IRQ_PRELOAD;  
+    volatile uint32_t COUNTER;   
+    volatile uint32_t PRELOAD;   
+    volatile uint32_t WRAPS;   
 } Systick_TypeDef;
 
-typedef union {
-    uint32_t value;
-    struct {
-        uint32_t reset         :  1; /* Reset peripheral */
-        uint32_t enable        :  1; /* Enable counting */
-        uint32_t irq           :  1; /* Enable irq */
-        uint32_t reserved3_15  : 13;
-        uint32_t prescaler     : 16; /* Clock prescaler */
-    };
-} SystickConfig_TypeDef;
+#define SYSTICK_BASE    0x80000100
+#define SYSTICK         ((Systick_TypeDef *) SYSTICK_BASE)
 
-typedef union {
-    uint32_t value;
-    struct {
-        uint32_t pending       :  1; /* Counter is working */
-        uint32_t reserved1_31  : 31;
-    };
-} SystickStatus_TypeDef;
+#define SYSTICK_CONFIG_RESET_BIT_Pos    (0U)
+#define SYSTICK_CONFIG_RESET_BIT        (1 << SYSTICK_CONFIG_RESET_BIT_Pos)
+#define SYSTICK_CONFIG_ENABLE_BIT_Pos   (1U)
+#define SYSTICK_CONFIG_ENABLE_BIT       (1 << SYSTICK_CONFIG_ENABLE_BIT_Pos)
+#define SYSTICK_CONFIG_IRQ_BIT_Pos      (2U)
+#define SYSTICK_CONFIG_IRQ_BIT          (1 << SYSTICK_CONFIG_IRQ_BIT_Pos)
+#define SYSTICK_CONFIG_WRAPS_BIT_Pos    (3U)
+#define SYSTICK_CONFIG_WRAPS_BIT        (1 << SYSTICK_CONFIG_WRAPS_BIT_Pos)
+#define SYSTICK_CONFIG_PRESCALER_Pos    (16U)
+#define SYSTICK_CONFIG_PRESCALER_Msk    (0xFF << SYSTICK_CONFIG_PRESCALER_Pos)
 
-#define SYSTICK_BASE           0x80000100
-#define SYSTICK                ((Systick_TypeDef *) SYSTICK_BASE)
+#define SYSTICK_STATUS_PENDING_BIT_Pos  (0U)
+#define SYSTICK_STATUS_PENDING_BIT      (1 << SYSTICK_STATUS_PENDING_BIT_Pos)
 
 
 void systick_init(uint32_t prescaler) {
 
-    SystickConfig_TypeDef *config = (SystickConfig_TypeDef *)&(SYSTICK->CONFIG);
-
-    config->reset = 1; /* Reset */
-    while (config->reset); /* Wait until reset done */
-    config->prescaler = (prescaler << 16); /* Set prescaler */
+    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_RESET_BIT); /* Reset */
+    while (READ_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_RESET_BIT)); /* Wait until reset done */
+    MODIFY_REG(SYSTICK->CONFIG, SYSTICK_CONFIG_PRESCALER_Msk, prescaler << SYSTICK_CONFIG_PRESCALER_Pos); /* Set prescaler */
 }
 
 void systick_irq(bool enable) {
 
-    SystickConfig_TypeDef *config = (SystickConfig_TypeDef *)&(SYSTICK->CONFIG);
-
-    config->irq = enable; /* Set irq state */
+    MODIFY_REG(SYSTICK->CONFIG, SYSTICK_CONFIG_IRQ_BIT, enable << SYSTICK_CONFIG_IRQ_BIT_Pos);
 }
 
 void systick_start(uint32_t value) {
 
-    SystickConfig_TypeDef *config = (SystickConfig_TypeDef *)&(SYSTICK->CONFIG);
-
     SYSTICK->COUNTER = value;
-    config->enable = 1; /* Enable timer */
+    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_ENABLE_BIT); /* Enable timer */
 }
 
 void systick_wait(uint32_t value) {
 
-    SystickConfig_TypeDef *config = (SystickConfig_TypeDef *)&(SYSTICK->CONFIG);
-    SystickStatus_TypeDef *status = (SystickStatus_TypeDef *)&(SYSTICK->STATUS);
-
     SYSTICK->COUNTER = value;
-    config->enable = 1; /* Enable timer */
-    while (status->pending); /* Wait until count is done */
+    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_ENABLE_BIT); /* Enable timer */
+    while (SYSTICK->STATUS & SYSTICK_STATUS_PENDING_BIT); /* Wait until count is done */
 }
 
 #define CALLBACKS   10
-static uint32_t __counter;
 static uint32_t __ticks;
 
 static systick_callbacks_t callbacks[CALLBACKS] = {0};
 
 void systick_init_irq(uint32_t prescaler, uint32_t value) {
 
-    SystickConfig_TypeDef *config = (SystickConfig_TypeDef *)&(SYSTICK->CONFIG);
+    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_RESET_BIT); /* Reset */
+    while (READ_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_RESET_BIT)); /* Wait until reset done */
+    MODIFY_REG(SYSTICK->CONFIG, SYSTICK_CONFIG_PRESCALER_Msk, prescaler << SYSTICK_CONFIG_PRESCALER_Pos); /* Set prescaler */
+    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_IRQ_BIT); /* IRQ */
 
-    config->reset = 1; /* Reset */
-    while (config->reset); /* Wait until reset done */
-    config->prescaler = (prescaler << 16); /* Set prescaler */
-    config->irq = true; /* Set irq state */
-
-    __counter = value;
     SYSTICK->COUNTER = value;
-    SYSTICK->IRQ_PRELOAD = value;
-    config->enable = 1; /* Enable timer */
+    SYSTICK->PRELOAD = value;
+    SET_BIT(SYSTICK->CONFIG, SYSTICK_CONFIG_ENABLE_BIT); /* Enable timer */
 }
 
 void systick_add_event(systick_cb cb, void *ctx, systick_prio_t prio, uint32_t interval) {
@@ -126,15 +110,9 @@ uint32_t get_ticks() {
     return __ticks;
 }
 
-uint32_t get_millis() {
+void delay(uint32_t ticks) {
 
-    return __ticks * 10;
-}
+    const uint32_t start = get_ticks();
 
-void delay_ms(uint32_t ms) {
-
-    const uint32_t start = __ticks;
-    ms = ms/10;
-
-    while ((__ticks - start) < ms) {}
+    while ((get_ticks() - start) < ticks) {}
 }
