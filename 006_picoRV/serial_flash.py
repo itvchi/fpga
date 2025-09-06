@@ -93,8 +93,15 @@ with serial.Serial(PORT, BAUDRATE, timeout=0.1) as ser:
     # Send CHUNKS
     for i, chunk in enumerate(chunks):
         label = f"Chunk {i+1}/{len(chunks)}"
-        if not send_command(ser, CMD_DATA, chunk, label):
+        success = False
+        for attempt in range(3):
+            if send_command(ser, CMD_DATA, chunk, label):
+                success = True
+                break
+        if not success:
             exit(1)
+    # @up: added up to 3 attemps for each chunk as temporary workaround for failed transaction
+    # should add DEBUG_BYTES define into bootloader and list bytes to compare what is failing
 
     # Send START command
     if not send_command(ser, CMD_START, b"", "Start Execution"):
