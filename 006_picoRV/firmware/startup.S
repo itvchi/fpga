@@ -59,12 +59,12 @@ LoopFillZeroBSS:
 	j LoopFillZeroBSS
 
 DoneFillZeroBSS:
-	la t0, leds
-	sw t2, 0(t0)
 
+	/* Load current irq_mask register value into __maskirq */
 	la t0, __maskirq
 	picorv32_maskirq_insn(t1, zero)		
     sw t1, 0(t0)
+
 	call main
 
 inf_loop:	
