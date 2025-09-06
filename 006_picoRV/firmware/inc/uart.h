@@ -2,6 +2,7 @@
 #define _UART_H_
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define BAUDRATE    115200
 
@@ -26,5 +27,11 @@ void uart_put(Uart_TypeDef *uart, char byte);
 void uart_print(Uart_TypeDef *uart, char *str);
 void uart_print_hex(Uart_TypeDef *uart, const uint32_t value);
 void uart_print_irq(Uart_TypeDef *uart, char *buffer);
+
+typedef void (*callback_t)(char *, size_t);
+#define UART_RX_CALLBACK_ON_NL 0x01
+#define UART_RX_CALLBACK_ON_CR 0x02
+
+void uart_read_irq(Uart_TypeDef *uart, char *buffer, size_t buffer_size, callback_t ready_cb, unsigned int flags);
 
 #endif /* _UART_H_ */

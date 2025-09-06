@@ -251,7 +251,7 @@ module top_base (
         .spi_clk(spi_clk),
         .spi_mosi(spi_mosi));
 
-    wire [4:0] not_connected;
+    wire [3:0] not_connected;
 
     gpio gpio_periph (
         .clk(pll_clk),

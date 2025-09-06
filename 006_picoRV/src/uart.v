@@ -114,9 +114,13 @@ always @(posedge clk or negedge reset_n) begin
                 end
 
                 /* Set rx data ready bit in r_status register - set by hardware, reset by software */
+                irq_rx <= 1'b0; /* default assignment */
                 if (data_valid) begin 
                     r_rx_data <= uart_rx_data;
                     r_status[0] <= 1'b1;
+                    if (config_rx_irq) begin
+                        irq_rx <= 1'b1;
+                    end
                 end
 
                 /* Set tx busy bit in r_status register - set and reset by hardware */

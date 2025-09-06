@@ -125,3 +125,40 @@ void uart_print_irq(Uart_TypeDef *uart, char *buffer) {
         irq_tx_buffer++;
     }
 }
+
+volatile char *irq_rx_buffer = NULL;
+volatile size_t irq_rx_buffer_size;
+callback_t irq_rx_ready_cb = NULL;
+unsigned int irq_rx_flags;
+
+void uart_read_irq(Uart_TypeDef *uart, char *buffer, size_t buffer_size, callback_t ready_cb, unsigned int flags) {
+
+    irq_rx_buffer = buffer;
+    irq_rx_buffer_size = buffer_size;
+    irq_rx_ready_cb = ready_cb;
+    irq_rx_flags = flags;
+    SET_BIT(uart->CONFIG, UART_CONFIG_RX_IRQ_BIT); /* Enable rx irq */
+}
+
+void uart2_rx_handler() {
+
+    static size_t buffer_data;
+    char data;
+
+    if (buffer_data < irq_rx_buffer_size) {
+        data = UART2->RX_DATA;
+        irq_rx_buffer[buffer_data] = data;
+        buffer_data++;
+    }
+
+    if (((irq_rx_flags & UART_RX_CALLBACK_ON_NL) && data == '\n') ||
+        ((irq_rx_flags & UART_RX_CALLBACK_ON_CR) && data == '\r') ||
+        buffer_data == irq_rx_buffer_size) {
+
+        if (irq_rx_ready_cb) {
+            irq_rx_ready_cb(irq_rx_buffer, buffer_data);
+        }
+
+        buffer_data = 0;
+    }
+}
