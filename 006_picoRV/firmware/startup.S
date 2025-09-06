@@ -60,6 +60,11 @@ LoopFillZeroBSS:
 
 DoneFillZeroBSS:
 
+	/* Load __mtvec into mtvec register value */
+	la t0, __mtvec
+    lw t1, 0(t0)
+	picorv32_mtvec_insn(t1, t1)
+
 	/* Load current irq_mask register value into __maskirq */
 	la t0, __maskirq
 	picorv32_maskirq_insn(t1, zero)		
@@ -71,5 +76,7 @@ inf_loop:
 	j inf_loop
 
 .data
+__mtvec:
+	.word 0x1100
 __maskirq:
     .word 0
