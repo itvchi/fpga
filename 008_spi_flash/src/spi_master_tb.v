@@ -15,6 +15,9 @@ wire spi_cs;
 spi_master UUT (
     .clk(clk),
     .rst_n(rst_n),
+    .prescaler(8'd0),
+    .cpha(1'b0),
+    .cpol(1'b0),
     .data(data),
     .valid(valid),
     .ready(ready),

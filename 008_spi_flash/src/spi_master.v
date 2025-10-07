@@ -1,11 +1,9 @@
-module spi_master #(
-    parameter CLK_FREQ = 27000000,
-    parameter SPI_FREQ = 1500000,
-    parameter CPOL = 0,
-    parameter CPHA = 1
-) (
+module spi_master (
     input clk,
     input rst_n,
+    input [7:0] prescaler,
+    input cpol,
+    input cpha,
     /* Data stream interface from driver */
     input [7:0] data,
     input valid,
@@ -15,8 +13,20 @@ module spi_master #(
     output spi_clk,
     output spi_mosi);
 
-localparam integer CLK_DIV = (CLK_FREQ / (SPI_FREQ * 2));
-localparam DEFAULT_BITCOUNT = CPHA ? 4'hF : 4'h0;
+/* Configuration registers latch on reset */
+reg [7:0] PRESCALER = 8'b0;
+reg CPOL = 1'b0;
+reg CPHA = 1'b0;
+reg [3:0] DEFAULT_BITCOUNT = 4'b0;
+
+always @(posedge clk) begin
+    if (!rst_n) begin
+        PRESCALER <= prescaler;
+        CPOL <= cpol;
+        CPHA <= cpha;
+        DEFAULT_BITCOUNT <= cpha ? 4'hF : 4'h0;
+    end
+end
 
 reg [7:0] local_data;
 reg [7:0] shift_reg;
@@ -40,6 +50,18 @@ always @(posedge clk) begin
         current_state <= next_state;
     end
 end
+
+/* Clock enable signal generator */
+wire clk_en;
+
+clk_en_gen #(
+        .COUNTER_WIDTH(8)
+    ) clock_enable (
+        .clk(clk), 
+        .rst_n(rst_n),
+        .enable(current_state != STATE_IDLE),
+        .prescaler(PRESCALER),
+        .clk_en(clk_en));
 
 /* Current state cobinational logic */
 always @(*) begin
@@ -84,30 +106,6 @@ always @(posedge clk) begin
     end
 end
 
-reg [31:0] clk_counter;
-reg clk_en;
-
-always @(posedge clk) begin
-    if (!rst_n) begin
-        clk_counter <= 32'd0;
-        clk_en <= 1'b0;
-    end else begin
-        if (current_state != STATE_IDLE) begin
-            if (clk_counter >= (CLK_DIV - 1)) begin
-                clk_counter <= 32'd0;
-                clk_en <= 1'b1;
-            end else begin
-                clk_counter <= clk_counter + 32'd1;
-                clk_en <= 1'b0;
-            end
-        end else begin
-            clk_counter <= 32'd0;
-            clk_en <= 1'b0;
-        end
-    end
-end
-
-
 reg local_spi_clk;
 
 always @(posedge clk or negedge rst_n) begin
@@ -143,5 +141,36 @@ assign ready = local_ready;
 assign spi_cs = (current_state == STATE_IDLE); /* Deassert in IDLE (active low signal) */
 assign spi_clk = local_spi_clk; 
 assign spi_mosi = shift_reg[7]; /* MSB-first */
+
+endmodule
+
+module clk_en_gen #(
+    parameter COUNTER_WIDTH = 16
+)(
+    input  clk,
+    input  rst_n,
+    input  enable,
+    input  [COUNTER_WIDTH-1:0] prescaler,
+    output reg clk_en);
+
+    reg [COUNTER_WIDTH-1:0] counter;
+
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            counter <= {COUNTER_WIDTH{1'b0}};
+            clk_en  <= 1'b0;
+        end else if (enable) begin
+            if (counter >= prescaler) begin
+                counter <= {COUNTER_WIDTH{1'b0}};
+                clk_en  <= 1'b1;
+            end else begin
+                counter <= counter + 1'b1;
+                clk_en  <= 1'b0;
+            end
+        end else begin
+            counter <= {COUNTER_WIDTH{1'b0}};
+            clk_en  <= 1'b0;
+        end
+    end
 
 endmodule
