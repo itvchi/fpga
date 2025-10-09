@@ -123,13 +123,38 @@ module spi_master_tb();
             send_byte(byte);
 
             if (spi_data === byte) begin
-                $display("\tSend byte 0x%02H - OK", byte);
+                $display("\tSend byte 0x%02h - OK", byte);
             end else begin
                 error_count = error_count + 1;
-                $display("\tSend byte 0x%02H - FAIL (expected 0x%02h)", spi_data, byte);
+                $display("\tSend byte 0x%02h - FAIL (expected 0x%02h)", spi_data, byte);
             end
         end
-    endtask 
+    endtask
+
+    task test_send_bytes(input [7:0] byte0, input [7:0] byte1, input [7:0] byte2, input [7:0] byte3);
+        reg [7:0] bytes [3:0];
+        begin
+            test_count = test_count + 1;
+
+            send_byte_nowait(byte0);
+            send_byte_nowait(byte1);
+            bytes[0] = spi_data;
+            send_byte_nowait(byte2);
+            bytes[1] = spi_data;
+            send_byte_nowait(byte3);
+            bytes[2] = spi_data;
+            @(posedge clk);
+            wait_not_busy();
+            bytes[3] = spi_data;
+            
+            if (byte0 === bytes[0] && byte1 === bytes[1] && byte2 === bytes[2] && byte3 === bytes[3]) begin
+                $display("\tSend bytes 0x%02h 0x%02h 0x%02h 0x%02h - OK", byte0, byte1, byte2, byte3);
+            end else begin
+                error_count = error_count + 1;
+                $display("\tSend bytes 0x%02h 0x%02h 0x%02h 0x%02h - FAIL (expected 0x%02h 0x%02h 0x%02h 0x%02h)", bytes[0], bytes[1], bytes[2], bytes[3], byte0, byte1, byte2, byte3);
+            end
+        end
+    endtask
 
     //---------------------------------------
     // SPI MOSI monitor - probes mosi signal to compare if it is same as tx_data
@@ -196,8 +221,14 @@ module spi_master_tb();
         test_send_byte(1'b1, 1'b0, 8'hA5);
         test_send_byte(1'b0, 1'b1, 8'hA5);
         test_send_byte(1'b1, 1'b1, 8'hA5);
+        #100;
         cpol = 0;
         cpha = 0;
+        #100;
+
+        // ---------- TX multi byte test ----------
+        $display("=== TX multi byte test ===");
+        test_send_bytes(8'h22, 8'hC3, 8'h44, 8'hD2);
 
         // ---------- Summarize test results ----------
         if (error_count) begin
