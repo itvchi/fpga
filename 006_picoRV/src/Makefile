@@ -10,6 +10,8 @@ sim: | build_dir
 	cd $(BUILDDIR) && vvp uart_tb.vvp
 	iverilog -o $(BUILDDIR)/spi_tb.vvp $(TESTBENCHDIR)/spi_tb.v spi.v
 	cd $(BUILDDIR) && vvp spi_tb.vvp
+	iverilog -o $(BUILDDIR)/new_spi_tb.vvp $(TESTBENCHDIR)/new_spi_tb.v new_spi.v
+	cd $(BUILDDIR) && vvp new_spi_tb.vvp
 
 build_dir:
 	mkdir -p $(BUILDDIR)

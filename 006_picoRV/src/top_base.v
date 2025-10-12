@@ -68,6 +68,7 @@ module top_base (
     wire        spi_cs;
     wire        spi_clk;
     wire        spi_mosi;
+    wire        spi_miso;
 
     reg         gpio_sel;
     wire        gpio_ready;
@@ -249,7 +250,8 @@ module top_base (
         .data_o(spi_data_o),
         .spi_cs(spi_cs),
         .spi_clk(spi_clk),
-        .spi_mosi(spi_mosi));
+        .spi_mosi(spi_mosi),
+        .spi_miso(spi_miso));
 
     wire [3:0] not_connected;
 
@@ -263,9 +265,9 @@ module top_base (
         .ready(gpio_ready),
         .data_o(gpio_data_o),
         .gpio(gpio),
-        .af_oe({{10{1'b1}}, 1'b0, {4{1'b1}}, 1'b0}),
-        .af_for_gpio({{9{1'bz}}, uart2_tx_gpio, 1'bz, spi_mosi, spi_clk, spi_cs, uart1_tx_gpio, 1'bz}),
-        .af_from_gpio({uart2_rx_gpio, not_connected, uart1_rx_gpio}));
+        .af_oe({{9{1'b1}}, 2'b0, {4{1'b1}}, 1'b0}),
+        .af_for_gpio({{8{1'bz}}, uart2_tx_gpio, 2'bz, spi_mosi, spi_clk, spi_cs, uart1_tx_gpio, 1'bz}),
+        .af_from_gpio({uart2_rx_gpio, spi_miso, not_connected, uart1_rx_gpio}));
 
     crc32 crc_gen (
         .clk(clk),

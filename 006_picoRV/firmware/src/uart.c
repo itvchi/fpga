@@ -34,8 +34,8 @@ void uart_init(uint32_t baudrate_prescaler) {
 
     do_uart_init(UART, &baudrate_prescaler);
     
-    gpio_set_mode(GPIO_MODE_AF, 5);
     gpio_set_mode(GPIO_MODE_AF, 6);
+    gpio_set_mode(GPIO_MODE_AF, 7);
     
     do_uart_init(UART2, &baudrate_prescaler);
 }
