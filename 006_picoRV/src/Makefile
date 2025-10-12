@@ -1,13 +1,14 @@
 BUILDDIR:=./build
+TESTBENCHDIR:=./testbench
 
 all: sim
 
 sim: | build_dir
-	iverilog -o $(BUILDDIR)/systick_tb.vvp systick_tb.v systick.v
+	iverilog -o $(BUILDDIR)/systick_tb.vvp $(TESTBENCHDIR)/systick_tb.v systick.v
 	cd $(BUILDDIR) && vvp systick_tb.vvp
-	iverilog -o $(BUILDDIR)/uart_tb.vvp uart_tb.v uart.v
+	iverilog -o $(BUILDDIR)/uart_tb.vvp $(TESTBENCHDIR)/uart_tb.v uart.v
 	cd $(BUILDDIR) && vvp uart_tb.vvp
-	iverilog -o $(BUILDDIR)/spi_tb.vvp spi_tb.v spi.v
+	iverilog -o $(BUILDDIR)/spi_tb.vvp $(TESTBENCHDIR)/spi_tb.v spi.v
 	cd $(BUILDDIR) && vvp spi_tb.vvp
 
 build_dir:
