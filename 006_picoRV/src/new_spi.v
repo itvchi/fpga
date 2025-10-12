@@ -216,7 +216,7 @@ module clk_en_gen #(
         if (!rst_n) begin
             counter <= {COUNTER_WIDTH{1'b0}};
         end else if (enable) begin
-            if (counter >= (prescaler + 2)) begin
+            if (counter > (prescaler + 2)) begin
                 counter <= {COUNTER_WIDTH{1'b0}};
                 clk_en  <= 1'b1;
             end else begin
@@ -234,7 +234,7 @@ module spi (
     input reset_n,
     input select,
     input [3:0] wstrb,
-    input [3:0] addr,
+    input [4:0] addr,
     input [31:0] data_i,
     output reg ready,
     output reg [31:0] data_o,
@@ -254,14 +254,13 @@ wire            config_enable = r_config[1];
 wire            config_cpol = r_config[2];
 wire            config_cpha = r_config[3];
 
-wire            config_send = r_config[2];
-
-
 wire busy;
 reg new_tx_data;
 reg [7:0] tx_data;
 reg tx_valid;
 wire tx_ready;
+wire rx_data;
+wire rx_valid;
 
 spi_master master (
     .clk(clk),
@@ -272,8 +271,8 @@ spi_master master (
     .tx_data(tx_data),
     .tx_valid(tx_valid),
     .tx_ready(tx_ready),
-    // .rx_data(),
-    // .rx_valid(),
+    .rx_data(rx_data),
+    .rx_valid(rx_valid),
     .busy(busy),
     .spi_cs(spi_cs),
     .spi_clk(spi_clk),
@@ -317,7 +316,10 @@ always @(posedge clk or negedge reset_n) begin
                     8'h04:  data_o <= r_prescaler;
                     8'h08:  data_o <= r_status;
                     8'h0C:  data_o <= 32'd0;
-                    8'h10:  data_o <= {24'd0, r_rx_data};
+                    8'h10:  begin
+                        data_o <= {24'd0, r_rx_data};
+                        r_status[1] <= 1'b0;
+                    end
                 endcase
             end else begin
                 case (addr)
@@ -359,6 +361,11 @@ always @(posedge clk or negedge reset_n) begin
             if (tx_valid && tx_ready) begin
                 tx_valid <= 1'b0;
                 new_tx_data <= 1'b0;
+            end
+
+            if (rx_valid) begin
+                r_rx_data <= rx_data;
+                r_status[1] <= 1'b1;
             end
         end
     end

@@ -16,5 +16,6 @@ typedef enum {
 void spi_init(const Spi_Mode mode, const uint8_t clk_prescaler, const bool hw_cs);
 void spi_send_byte(uint8_t byte);
 void spi_send_bytes(uint8_t *data, size_t data_len);
+void spi_transfer(const uint8_t *tx_buf, uint8_t *rx_buf, size_t length);
 
 #endif /* _SPI_H_ */

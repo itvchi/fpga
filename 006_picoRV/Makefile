@@ -58,7 +58,10 @@ firmware:
 bootloader_20k:
 	$(MAKE) -C $@
 
-.PHONY: firmware bootloader_20k
+bootrom:
+	$(MAKE) -C $@
+
+.PHONY: firmware bootloader_20k bootrom
 
 build_dir:
 	mkdir -p $(BUILDDIR)

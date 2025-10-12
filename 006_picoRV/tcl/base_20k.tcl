@@ -17,4 +17,5 @@ add_file -type sdc "constraints/common.sdc"
 set_option -synthesis_tool gowinsynthesis
 set_option -output_base_name picoRV
 set_option -top_module top_base
+set_option -use_mspi_as_gpio 1
 run all

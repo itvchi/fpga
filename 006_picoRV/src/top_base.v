@@ -93,7 +93,7 @@ module top_base (
      * SYSTICK      80000100 - 80000120
      * UART1        80000200 - 80000220
      * UART2        80000280 - 800002A0
-     * SPI          80000300 - 80000310
+     * SPI          80000300 - 80000320
      * GPIO         80000400 - 80000420
      * CRC32        80000500 - 80000510
     */
@@ -125,7 +125,7 @@ module top_base (
                 uart1_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0280) && (mem_addr < 32'h8000_02A0)) begin
                 uart2_sel <= 1'b1;
-            end else if ((mem_addr >= 32'h8000_0300) && (mem_addr < 32'h8000_0310)) begin
+            end else if ((mem_addr >= 32'h8000_0300) && (mem_addr < 32'h8000_0320)) begin
                 spi_sel <= 1'b1;
             end else if ((mem_addr >= 32'h8000_0400) && (mem_addr < 32'h8000_0420)) begin
                 gpio_sel <= 1'b1;
@@ -244,7 +244,7 @@ module top_base (
         .reset_n(reset_n),
         .select(spi_sel),
         .wstrb(mem_wstrb),
-        .addr(mem_addr[3:0]),
+        .addr(mem_addr[4:0]),
         .data_i(mem_wdata),
         .ready(spi_ready),
         .data_o(spi_data_o),

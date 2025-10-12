@@ -25,6 +25,8 @@ typedef struct {
 
 #define SPI_STATUS_BUSY_BIT_Pos     (0U)
 #define SPI_STATUS_BUSY_BIT         (1 << SPI_STATUS_BUSY_BIT_Pos)
+#define SPI_STATUS_RX_NE_BIT_Pos    (1U)
+#define SPI_STATUS_RX_NE_BIT        (1 << SPI_STATUS_RX_NE_BIT_Pos)
 
 void spi_init(const Spi_Mode mode, const uint8_t clk_prescaler, const bool hw_cs) {
 
@@ -62,5 +64,21 @@ void spi_send_bytes(uint8_t *data, size_t data_len) {
 
     for (idx = 0; idx < data_len; idx++) {
         SPI->TX_DATA = data[idx];
+    }
+}
+
+void spi_transfer(const uint8_t *tx_buf, uint8_t *rx_buf, size_t length) {
+
+    size_t idx;
+    size_t rec = 0;
+
+    while (READ_BIT(SPI->STATUS, SPI_STATUS_BUSY_BIT));
+    (void)SPI->RX_DATA; /* Read leftovers */
+
+    for (idx = 0; idx < length; idx++) {
+        SPI->TX_DATA = tx_buf[idx];
+        if (rx_buf && READ_BIT(SPI->STATUS, SPI_STATUS_RX_NE_BIT)) {
+            rx_buf[rec++] = SPI->RX_DATA;
+        }
     }
 }
