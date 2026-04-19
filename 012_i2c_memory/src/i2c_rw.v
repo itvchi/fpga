@@ -18,7 +18,8 @@ i2cSlave u_i2cSlave(
     .rst(~n_rst),
     .sda(sda),
     .scl(scl),
-    .myReg0(data)
+    .myReg0(data),
+    .myReg1(8'd0)
 );
 
 endmodule

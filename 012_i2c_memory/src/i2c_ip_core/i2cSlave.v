@@ -51,11 +51,7 @@ module i2cSlave (
   sda,
   scl,
   myReg0,
-  myReg1,
-  myReg2,
-  myReg3,
-  myReg4,
-  myReg5
+  myReg1
 );
 
 input clk;
@@ -63,11 +59,7 @@ input rst;
 inout sda;
 input scl;
 output [7:0] myReg0;
-output [7:0] myReg1;
-output [7:0] myReg2;
-output [7:0] myReg3;
-output [7:0] myReg4;
-output [7:0] myReg5;
+input [7:0] myReg1;
 
 
 // local wires and regs
@@ -173,11 +165,7 @@ registerInterface u_registerInterface(
   .writeEn(writeEn),
   .dataOut(dataFromRegIF),
   .myReg0(myReg0),
-  .myReg1(myReg1),
-  .myReg2(myReg2),
-  .myReg3(myReg3),
-  .myReg4(myReg4),
-  .myReg5(myReg5)
+  .myReg1(myReg1)
 );
 
 serialInterface u_serialInterface (
@@ -196,6 +184,3 @@ serialInterface u_serialInterface (
 
 
 endmodule
-
-
- 

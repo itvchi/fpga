@@ -54,11 +54,7 @@ module registerInterface (
   writeEn,
   dataOut,
   myReg0,
-  myReg1,
-  myReg2,
-  myReg3,
-  myReg4,
-  myReg5
+  myReg1
 );
 
 input clk;
@@ -67,29 +63,16 @@ input [7:0] dataIn;
 input writeEn;
 output [7:0] dataOut;
 output [7:0] myReg0;
-output [7:0] myReg1;
-output [7:0] myReg2;
-output [7:0] myReg3;
-output [7:0] myReg4;
-output [7:0] myReg5;
+input [7:0] myReg1;
 
 reg [7:0] dataOut;
 reg [7:0] myReg0;
-reg [7:0] myReg1;
-reg [7:0] myReg2;
-reg [7:0] myReg3;
-reg [7:0] myReg4;
-reg [7:0] myReg5;
 
 // --- I2C Read
 always @(posedge clk) begin
   case (addr)
     8'h00: dataOut <= myReg0;  
-    8'h01: dataOut <= myReg1;  
-    8'h02: dataOut <= myReg2;  
-    8'h03: dataOut <= myReg3;  
-    8'h04: dataOut <= myReg4;  
-    8'h05: dataOut <= myReg5;  
+    8'h01: dataOut <= myReg1;
     default: dataOut <= 8'h00;
   endcase
 end
@@ -98,17 +81,9 @@ end
 always @(posedge clk) begin
   if (writeEn == 1'b1) begin
     case (addr)
-      8'h00: myReg0 <= dataIn;  
-      8'h01: myReg1 <= dataIn;
-      8'h02: myReg2 <= dataIn;
-      8'h03: myReg3 <= dataIn;
-      8'h04: myReg4 <= dataIn;
-      8'h05: myReg5 <= dataIn;
+      8'h00: myReg0 <= dataIn;
     endcase
   end
 end
 
 endmodule
-
-
- 
