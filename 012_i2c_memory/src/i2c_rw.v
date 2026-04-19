@@ -1,7 +1,8 @@
 module i2c_rw(
     input clk,
     inout sda,
-    input scl
+    input scl,
+    output [3:0] hw_dbg
 );
 
 wire n_rst;
