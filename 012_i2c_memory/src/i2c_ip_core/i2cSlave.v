@@ -50,6 +50,8 @@ module i2cSlave (
   rst,
   sda,
   scl,
+  i2c_reg_wr,
+  i2c_reg_rd,
   myReg0,
   myReg1
 );
@@ -58,6 +60,8 @@ input clk;
 input rst;
 inout sda;
 input scl;
+output i2c_reg_wr;
+output i2c_reg_rd;
 output [7:0] myReg0;
 input [7:0] myReg1;
 
@@ -164,6 +168,7 @@ registerInterface u_registerInterface(
   .dataIn(dataToRegIF),
   .writeEn(writeEn),
   .dataOut(dataFromRegIF),
+  .reg_wr(i2c_reg_wr),
   .myReg0(myReg0),
   .myReg1(myReg1)
 );
@@ -179,7 +184,8 @@ serialInterface u_serialInterface (
   .sdaIn(sdaDeb), 
   .sdaOut(sdaOut), 
   .startStopDetState(startStopDetState),
-  .clearStartStopDet(clearStartStopDet) 
+  .clearStartStopDet(clearStartStopDet),
+  .reg_rd(i2c_reg_rd)
 );
 
 

@@ -53,6 +53,7 @@ module registerInterface (
   dataIn,
   writeEn,
   dataOut,
+  reg_wr,
   myReg0,
   myReg1
 );
@@ -62,8 +63,11 @@ input [7:0] addr;
 input [7:0] dataIn;
 input writeEn;
 output [7:0] dataOut;
+output reg_wr;
 output [7:0] myReg0;
 input [7:0] myReg1;
+
+reg reg_wr;
 
 reg [7:0] dataOut;
 reg [7:0] myReg0;
@@ -79,9 +83,13 @@ end
 
 // --- I2C Write
 always @(posedge clk) begin
+  reg_wr <= 1'b0;
   if (writeEn == 1'b1) begin
     case (addr)
-      8'h00: myReg0 <= dataIn;
+      8'h00: begin
+        myReg0 <= dataIn;
+        reg_wr <= 1'b1;
+      end
     endcase
   end
 end
