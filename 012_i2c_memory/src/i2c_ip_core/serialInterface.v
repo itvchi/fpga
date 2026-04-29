@@ -55,7 +55,7 @@
 //`include "timescale.v"
 `include "i2cSlave_define.v"
 
-module serialInterface (clearStartStopDet, clk, dataIn, dataOut, regAddr, rst, scl, sdaIn, sdaOut, startStopDetState, writeEn, reg_rd);
+module serialInterface (clearStartStopDet, clk, dataIn, dataOut, regAddr, rst, scl, sdaIn, sdaOut, startStopDetState, writeEn, reg_rd, reg_rd_addr);
 input   clk;
 input   [7:0]dataIn;
 input   rst;
@@ -68,6 +68,7 @@ output  [7:0]regAddr;
 output  sdaOut;
 output  writeEn;
 output  reg_rd;
+output  [7:0] reg_rd_addr;
 
 reg     clearStartStopDet, next_clearStartStopDet;
 wire    clk;
@@ -81,6 +82,7 @@ reg     sdaOut, next_sdaOut;
 wire    [1:0]startStopDetState;
 reg     writeEn, next_writeEn;
 reg     reg_rd;
+reg     [7:0] reg_rd_addr;
 
 // diagram signals declarations
 reg  [2:0]bitCnt, next_bitCnt;
@@ -130,6 +132,7 @@ begin
   next_clearStartStopDet <= clearStartStopDet;
   next_regAddr <= regAddr;
   reg_rd <= 1'b0;
+  reg_rd_addr <= 8'd0;
   case (CurrState_SISt)  // synopsys parallel_case full_case
     `START:
     begin
@@ -258,6 +261,7 @@ begin
         begin
           next_streamSt <= `STREAM_READ;
           reg_rd <= 1'b1;
+          reg_rd_addr <= regAddr;
         end
         else
         next_streamSt <= `STREAM_WRITE_ADDR;
