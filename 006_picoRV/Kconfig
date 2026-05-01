@@ -1,13 +1,13 @@
 choice
     prompt "Target FPGA"
-    default TANG_NANO_9K
+    default TARGET_TANG_NANO_9K
 
-config TANG_NANO_9K
+config TARGET_TANG_NANO_9K
     bool "Tang Nano 9k"
     help 
         Sipeed Tang Nano 9k - FPGA board with Gowin GW1NR-9
 
-config TANG_PRIMER_20K
+config TARGET_TANG_PRIMER_20K
     bool "Tang Primer 20k"
     help 
         Sipeed Tang Primer 20K - FPGA board with Gowin GW2A
@@ -20,43 +20,51 @@ choice
 
 config FS_MINIMAL
     bool "Minimal"
-    depends on TANG_NANO_9K || TANG_PRIMER_20K
+    depends on TARGET_TANG_NANO_9K
     help 
         picoRV core with memory mapped leds module
 
 config FS_BASE
     bool "Base"
-    depends on TANG_NANO_9K || TANG_PRIMER_20K
+    depends on TARGET_TANG_NANO_9K || TARGET_TANG_PRIMER_20K
     help 
         picoRV core with memory mapped leds module,
         sytick and uart and spi
 
 config FS_LCD
     bool "Lcd"
-    depends on TANG_NANO_9K
+    depends on TARGET_TANG_NANO_9K
     help 
         picoRV core with memory mapped leds module,
         sytick, uart and rgb interface lcd driver
 
 endchoice
 
+menu "System flavour"
+
+config FEATURE_FLASH_CACHE
+    bool "Custom flash controller (cache support)"
+    depends on TARGET_TANG_NANO_9K
+
+endmenu
+
 menu "Select modules"
 
 config WITH_IRQ
     bool "Enable IRQs"
-    depends on FS_MINIMAL || FS_BASE || FS_LCD
+    depends on FS_BASE || FS_LCD
 
 config WITH_GPIO
     bool "Include gpio API"
-    depends on FS_MINIMAL || FS_BASE || FS_LCD
+    depends on FS_BASE || FS_LCD
 
 config WITH_SYSTICK
     bool "Include systick API"
-    depends on (FS_BASE || FS_LCD) && WITH_GPIO
+    depends on FS_BASE || FS_LCD
 
 config WITH_UART
     bool "Include uart API"
-    depends on (FS_BASE || FS_LCD) && WITH_GPIO
+    depends on WITH_GPIO
 
 config WITH_SPI
     bool "Include spi API"
@@ -64,10 +72,33 @@ config WITH_SPI
 
 config WITH_ST7789
     bool "Include st7789 API"
-    depends on FS_BASE && WITH_SPI
+    depends on WITH_SPI
 
 config WITH_LCD
     bool "Include lcd API"
     depends on FS_LCD
 
 endmenu
+
+choice
+    prompt "Code example"
+    default EXAMPLE_BLINK
+
+config EXAMPLE_BLINK
+    bool "blink"
+    help 
+        led blink using memory mapped leds module
+
+config EXAMPLE_FLASH_PERF
+    bool "flash perf"
+    depends on TARGET_TANG_NANO_9K && FS_MINIMAL
+    help 
+        flash placed code execution speed test 
+
+config EXAMPLE_RAM_PERF
+    bool "ram perf"
+    depends on FS_MINIMAL
+    help 
+        ram placed code execution speed test
+
+endchoice

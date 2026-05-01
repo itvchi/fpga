@@ -1,4 +1,4 @@
-module user_flash_custom #(parameter CLK_FREQ=27_000_000) (
+module user_flash #(parameter CLK_FREQ=27_000_000) (
     input clk,
     input reset_n,
     input select,

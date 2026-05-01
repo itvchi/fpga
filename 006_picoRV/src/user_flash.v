@@ -7,10 +7,13 @@ module user_flash (
     input reset_n,
     input select,
     input [3:0] wstrb,
-    input [14:0] addr,
+    input [16:0] addr,
     input [31:0] data_i,
     output ready,
     output [31:0] data_o);
+
+    wire [14:0] word_addr; // word address, 9-bits row, 6-bits col
+    assign word_addr = addr[16:2];
 
     localparam 
     STATE_IDLE = 2'b00,
@@ -58,8 +61,8 @@ module user_flash (
 
     Gowin_Flash_Controller_Top gw_flash_controller (
         .wdata_i(data_i),
-        .wyaddr_i(addr[5:0]),  /* column address */ 
-        .wxaddr_i(addr[14:6]), /* row addres */
+        .wyaddr_i(word_addr[5:0]),  /* column address */ 
+        .wxaddr_i(word_addr[14:6]), /* row addres */
         .erase_en_i(erase_en),
         .done_flag_o(done_flag),
         .start_flag_i(start_flag),

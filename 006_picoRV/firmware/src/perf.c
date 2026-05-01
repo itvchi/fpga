@@ -1,5 +1,4 @@
 #include "perf.h"
-#include "leds.h"
 
 #define LEDS ((volatile unsigned char *) 0x80000000)
 

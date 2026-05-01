@@ -1,7 +1,9 @@
 #include "custom_ops.S"
 
 .global _start
-.global __maskirq
+
+.extern irq_init
+.weak irq_init
 
 .word _sidata
 .word _sdata
@@ -15,6 +17,7 @@ _start:
 	la sp, _estack
 
 /* Copy the data segment initializers from FLASH to SRAM */
+CopyDataInit: 
 	la t0, _sdata
 	la t1, _edata
 	la t2, _sidata
@@ -22,15 +25,14 @@ _start:
 
 LoopCopyDataInit:
 	add t4, t0, t3
-	bge t4, t1, DoneCopyDataInit 
+	bge t4, t1, CopyCodeInit 
 	lw t5, 0(t2)
 	sw t5, 0(t4)
 	addi t2, t2, 4
 	addi t3, t3, 4
 	j LoopCopyDataInit
 
-DoneCopyDataInit:
-
+CopyCodeInit:
 	la t0, _scode
 	la t1, _ecode
 	la t2, _sicode
@@ -38,45 +40,31 @@ DoneCopyDataInit:
 
 LoopCopyCodeInit:
 	add t4, t0, t3
-	bge t4, t1, DoneCopyCodeInit 
+	bge t4, t1, FillZeroBSS 
 	lw t5, 0(t2)
 	sw t5, 0(t4)
 	addi t2, t2, 4
 	addi t3, t3, 4
 	j LoopCopyCodeInit
 
-DoneCopyCodeInit:
-
-/* Zero fill the BSS segment. */
+FillZeroBSS:
 	la t0, _sbss
 	la t1, _ebss
 	li t2, 0
 
 LoopFillZeroBSS:
-	bge t0, t1, DoneFillZeroBSS
+	bge t0, t1, InitDone
 	sw t2, 0(t0)
 	addi t0, t0, 4
 	j LoopFillZeroBSS
 
-DoneFillZeroBSS:
-
-	/* Load __mtvec into mtvec register value */
-	la t0, __mtvec
-    lw t1, 0(t0)
-	picorv32_mtvec_insn(t1, t1)
-
-	/* Load current irq_mask register value into __maskirq */
-	la t0, __maskirq
-	picorv32_maskirq_insn(t1, zero)		
-    sw t1, 0(t0)
-
+InitDone:
+	call irq_init
 	call main
 
-inf_loop:	
+inf_loop:
 	j inf_loop
 
-.data
-__mtvec:
-	.word 0x1100
-__maskirq:
-    .word 0
+/* if irq not enable, this weak hook just returns */
+irq_init:
+    ret

@@ -2,8 +2,6 @@ module top (
     input clk,
     input rst_btn_n,
     output [5:0] leds);
-    
-
     parameter BARREL_SHIFTER = 0;
     parameter ENABLE_MUL = 0;
     parameter ENABLE_DIV = 0;
@@ -13,7 +11,7 @@ module top (
     parameter ENABLE_IRQ_QREGS = 0;
 
     parameter integer MEMBYTES = 8192;
-    parameter [31:0] STACKADDR = (MEMBYTES);
+    parameter [31:0] STACKADDR = 32'h0002_0000 + (MEMBYTES);
     parameter [31:0] PROGADDR_RESET = 32'h0000_0000;
     parameter [31:0] PROGADDR_IRQ = 32'h0000_0000;
 
@@ -70,25 +68,29 @@ module top (
                         sram_sel ? sram_data_o :
                         leds_sel ? leds_data_o : 32'h0;
 
+    wire pll_clk;
+
+    Gowin_rPLL rpll(
+        .clkout(pll_clk),
+        .clkin(clk));
+
     reset_control reset_controller (
-        .clk(clk),
+        .clk(pll_clk),
         .rst_btn_n(rst_btn_n),
         .reset_n(reset_n));
 
-    user_flash_custom flash (
-        .clk(clk),
+    user_flash flash (
+        .clk(pll_clk),
         .reset_n(reset_n),
         .select(flash_sel),
         .wstrb(mem_wstrb),
-        .addr(mem_addr[16:2]), // word address, 9-bits row, 6 bits col
+        .addr(mem_addr[16:0]), // word address, 9-bits row, 6 bits col
         .data_i(mem_wdata),
         .ready(flash_ready),
-        .data_o(flash_data_o),
-        .cache_hit(cache_hit),
-        .cache_miss(cache_miss));
+        .data_o(flash_data_o));
 
     sram #(.ADDRWIDTH(13)) memory (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),      
         .select(sram_sel),
         .wstrb(mem_wstrb),
@@ -98,7 +100,7 @@ module top (
         .data_o(sram_data_o));
 
     mm_leds leds_slave (
-        .clk(clk),
+        .clk(pll_clk),
         .reset_n(reset_n),
         .select(leds_sel),
         .data_i(mem_wdata),
@@ -132,7 +134,7 @@ module top (
         .ENABLE_IRQ(ENABLE_IRQ),
         .ENABLE_IRQ_QREGS(ENABLE_IRQ_QREGS)
     ) cpu (
-        .clk         (clk),
+        .clk         (pll_clk),
         .resetn      (reset_n),
         .mem_valid   (mem_valid),
         .mem_instr   (mem_instr),

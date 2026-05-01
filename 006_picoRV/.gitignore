@@ -1,3 +1,4 @@
 006_picoRV.gprj
 .config*
 src/mem_files/*
+tcl/flash_controller.tcl

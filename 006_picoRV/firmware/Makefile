@@ -30,9 +30,6 @@ include ../.config
 SRCS := src/main.c src/leds.c
 OBJS := $(BUILDDIR)/startup.o
 
-ifeq ($(CONFIG_FS_MINIMAL),y)
-	CFLAGS += -DCONFIG_FS_MINIMAL
-endif
 ifeq ($(CONFIG_FS_BASE),y)
 	SRCS += src/app_base.c
 	CFLAGS += -DCONFIG_FS_BASE
@@ -67,14 +64,21 @@ ifeq ($(CONFIG_WITH_ST7789),y)
 	CFLAGS += -DCONFIG_WITH_ST7789
 endif
 
-ifeq ($(CONFIG_TANG_NANO_9K),y)
+# Example configuration
+ifeq ($(CONFIG_EXAMPLE_PER_FLASH),y)
+	CFLAGS += -DEXAMPLE_PERF_FLASH
+else ifeq ($(CONFIG_EXAMPLE_PER_RAM),y)
+	CFLAGS += -DEXAMPLE_PERF_RAM
+endif
+
+# Target configuration
+ifeq ($(CONFIG_TARGET_TANG_NANO_9K),y)
 LDFLAGS+=-Tlinker_script_9k.ld
-else ifeq ($(CONFIG_TANG_PRIMER_20K),y)
+else ifeq ($(CONFIG_TARGET_TANG_PRIMER_20K),y)
 LDFLAGS+=-Tlinker_script_20k.ld
 endif
 
 OBJS+=$(patsubst src/%.c, $(BUILDDIR)/%.o, $(SRCS))
-LIBS:=${HOME}/opt/riscv-rv32i/lib/gcc/riscv32-unknown-elf/15.1.0/libgcc.a
 
 all: flash.bin
 

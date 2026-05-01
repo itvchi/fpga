@@ -1,42 +1,15 @@
-#include "perf.h"
 #include "leds.h"
-#include "systick.h"
-#include "system.h"
-
-volatile int leds;
-
-void led_action(void* ctx) {
-
-    volatile int *led_ctx = (volatile int*)ctx;
-    *led_ctx ^= 0b000011;
-    set_leds(*led_ctx);
-}
-
-void app_base();
-void app_st7789();
-void app_lcd();
+#include "perf.h"
 
 int main() {
 
-    // perf_flash();
-    // perf_ram();
-    
-#if defined(CONFIG_WITH_SYSTICK)
-    systick_add_event(led_action, (void*)&leds, SYSTICK_PRIO_HIGH, 2000);
-    systick_init_irq(0, F_CPU/1000);
-#endif /* defined(CONFIG_WITH_SYSTICK) */
-
-#if defined(CONFIG_FS_MINIMAL)
-    while (1) {}
-#elif defined(CONFIG_FS_BASE)
-    #if defined(CONFIG_WITH_ST7789)
-        app_st7789();
-    #else
-        app_base();
-    #endif
-#elif defined(CONFIG_FS_LCD)
-    app_lcd();
+#if defined(EXAMPLE_PERF_FLASH)
+    perf_flash();
+#elif defined(EXAMPLE_PERF_RAM)
+    perf_ram();
+#else
+    blink();
 #endif
 
-return 0;
+    return 0;
 }
