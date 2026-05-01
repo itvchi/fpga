@@ -7,7 +7,7 @@
 
 -mod_name Gowin_rPLL
 -file_name gowin_rpll
--path /home/itvchi/fpga/workspace/006_picoRV/src/gowin_rpll/
+-path /home/itvchi/fpga/workspace/006_picoRV/src/gowin_rpll_9k/
 -type PLL
 -rPll true
 -file_type vlg
@@ -18,6 +18,7 @@
 -fbdiv_sel 2
 -dyn_odiv_sel false
 -odiv_sel 8
+-dyn_sdiv_sel 54
 -dyn_da_en true
 -rst_sig false
 -rst_sig_p false
@@ -28,6 +29,7 @@
 -clkout_ft_dir 1
 -en_clkoutp false
 -clkoutp_bypass false
--en_clkoutd false
+-en_clkoutd true
 -clkoutd_bypass false
+-clkoutd_src CLKOUT
 -en_clkoutd3 false
