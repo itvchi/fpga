@@ -1,6 +1,7 @@
 #include "macros.h"
 #include "uart.h"
 #include "gpio.h"
+#include "system.h"
 #include <stddef.h>
 
 #define UART_CONFIG_RESET_BIT_Pos       (0U)
@@ -27,17 +28,30 @@ static void do_uart_init(Uart_TypeDef *uart, uint32_t *baudrate_prescaler) {
     SET_BIT(uart->CONFIG, UART_CONFIG_ENABLE_BIT); /* Enable uart */
 }
 
-void uart_init(uint32_t baudrate_prescaler) {
+/* baudrate_prescaler = clock_frequency / (2 * baudrate) *///
+static uint32_t get_prescaler(const baudrate_t baudrate) {
+
+    switch (baudrate) {
+        case BAUDRATE_9600:     return F_CPU / (2 * 9600);
+        case BAUDRATE_115200:   return F_CPU / (2 * 115200);
+    }
+
+    return get_prescaler(BAUDRATE_115200);
+}
+
+void uart_init(const baudrate_t baudrate) {
+
+    uint32_t baudrate_prescaler = get_prescaler(baudrate);
 
     gpio_set_mode(GPIO_MODE_AF, 0);
     gpio_set_mode(GPIO_MODE_AF, 1);
+    do_uart_init(UART1, &baudrate_prescaler);
 
-    do_uart_init(UART, &baudrate_prescaler);
-    
+#if defined(UART_2_AVAILABLE)
     gpio_set_mode(GPIO_MODE_AF, 6);
     gpio_set_mode(GPIO_MODE_AF, 7);
-    
     do_uart_init(UART2, &baudrate_prescaler);
+#endif /* defined(UART_2_AVAILABLE) */
 }
 
 // bool uart_get(char *data, bool is_blocking) {
@@ -107,7 +121,7 @@ void uart_tx_handler(Uart_TypeDef *uart) {
 }
 
 void uart1_tx_handler() {
-    uart_tx_handler(UART);
+    uart_tx_handler(UART1);
 }
 
 void uart2_tx_handler() {
@@ -126,7 +140,7 @@ void uart_print_irq(Uart_TypeDef *uart, char *buffer) {
     }
 }
 
-volatile char *irq_rx_buffer = NULL;
+char *irq_rx_buffer = NULL;
 volatile size_t irq_rx_buffer_size;
 callback_t irq_rx_ready_cb = NULL;
 unsigned int irq_rx_flags;

@@ -4,8 +4,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define BAUDRATE    115200
-
+#if defined(TARGET_TANG_NANO_9K)
+#define USER_UART   UART1
+#elif defined(TARGET_TANG_PRIMER_20K)
+#define USER_UART   UART2
+#define UART_2_AVAILABLE
+#endif
 
 typedef struct {
     volatile uint32_t CONFIG;
@@ -15,13 +19,17 @@ typedef struct {
     volatile uint32_t TX_DATA;  
 } Uart_TypeDef;
 
-#define UART_BASE   0x80000200
-#define UART        ((Uart_TypeDef *) UART_BASE)
+#define UART1_BASE   0x80000200
+#define UART1        ((Uart_TypeDef *) UART1_BASE)
 #define UART2_BASE   0x80000280
 #define UART2        ((Uart_TypeDef *) UART2_BASE)
 
+typedef enum {
+    BAUDRATE_9600,
+    BAUDRATE_115200
+} baudrate_t;
 
-void uart_init(uint32_t baudrate_prescaler); /* baudrate_prescaler = clock_frequency / (2 * baudrate) */
+void uart_init(const baudrate_t baudrate);
 // char uart_get();
 void uart_put(Uart_TypeDef *uart, char byte);
 void uart_print(Uart_TypeDef *uart, char *str);

@@ -48,7 +48,7 @@ config FEATURE_FLASH_CACHE
 
 endmenu
 
-menu "Select modules"
+menu "Select software API"
 
 config WITH_IRQ
     bool "Enable IRQs"
@@ -100,5 +100,17 @@ config EXAMPLE_RAM_PERF
     depends on FS_MINIMAL
     help 
         ram placed code execution speed test
+
+config EXAMPLE_SYSTICK
+    bool "systick"
+    depends on WITH_SYSTICK
+    help 
+        led blink with systick timer
+
+config EXAMPLE_UART
+    bool "uart"
+    depends on WITH_UART
+    help 
+        uart write read example
 
 endchoice

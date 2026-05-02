@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+void blink_once(const uint8_t bitshift);
 void blink(void);
 void set_leds(uint32_t value);
 uint32_t get_leds(void);

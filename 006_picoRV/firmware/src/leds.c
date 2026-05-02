@@ -2,14 +2,19 @@
 
 #define LEDS ((volatile uint32_t *) 0x80000000)
 
+static int cnt;
+
+void blink_once(const uint8_t bitshift) {
+
+    cnt++;
+    *LEDS = cnt>>bitshift;
+}
+
 void blink(void) {
 
-    int cnt = 0;
-
     while (1) {
-        cnt++;
-        *LEDS = cnt>>15;
-        // *LEDS = cnt>>10; //good for 1MHz system clock
+        blink_once(15);
+        // blink_once(10); //good for 1MHz system clock
     }
 }
 
