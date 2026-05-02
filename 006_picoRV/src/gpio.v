@@ -48,14 +48,6 @@ reg [31:0]      r_reset;        /* offset: 0x10  W  */
 
 wire [15:0]     gpio_in;
 
-initial begin
-    r_mode <= 32'd0;
-    r_out <= 32'd0;
-    r_in <= 32'd0;
-    r_set <= 32'd0;
-    r_reset <= 32'd0;
-end
-
 genvar i;
 generate
     for (i = 0; i < 16; i = i + 1) begin : gpio_inst
@@ -65,7 +57,7 @@ generate
             .af_oe(af_oe[i]),
             .af_for_gpio(af_for_gpio[i]),
             .af_from_gpio(af_from_gpio[i]),
-            .mode(2'b10),
+            .mode(r_mode[2*i +: 2]),
             .in_register(gpio_in[i]),
             .out_register(r_out[i])
         );
@@ -83,7 +75,11 @@ always @(posedge clk or negedge reset_n) begin
         ready <= 1'b0;
     end else begin
         ready <= 1'b0;
-        r_in <= gpio_in;
+        r_in <= {16'd0, gpio_in};
+
+        r_out <= (r_out | r_set) & ~r_reset;
+        r_set <= 32'd0;
+        r_reset <= 32'd0;
 
         if (select) begin
             if (wstrb == 'd0) begin
