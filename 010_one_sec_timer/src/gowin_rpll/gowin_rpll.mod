@@ -7,7 +7,7 @@
 
 -mod_name Gowin_rPLL
 -file_name gowin_rpll
--path /home/itvchi/fpga/workspace/010_one_sec_timer/src/gowin_rpll/
+-path /home/itvchi/fpga/workspace_gowin/010_one_sec_timer/src/gowin_rpll/
 -type PLL
 -rPll true
 -file_type vlg
@@ -27,7 +27,7 @@
 -clkout_bypass false
 -en_clkoutp true
 -clkoutp_bypass false
--psda_sel 4
+-psda_sel 8
 -dutyda_sel 8
 -en_clkoutd false
 -clkoutd_bypass false
