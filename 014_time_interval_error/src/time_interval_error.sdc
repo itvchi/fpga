@@ -1,0 +1,1 @@
+create_clock -name xtal -period 37.037 [get_nets {clk}]
