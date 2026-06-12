@@ -19,11 +19,13 @@ module tod #(
     reg phase_update_meta, phase_update_stable, phase_update_prev;
     reg do_freq_update;
     reg do_phase_update;
+    reg phase_update_done;
 
     always @(posedge clk) begin
         if (!rst_n) begin
             freq_adj_local <= 32'd0;
             {freq_update_meta, freq_update_stable, freq_update_prev} <= 3'b000;
+            do_freq_update <= 1'b0;
         end else begin
             {freq_update_meta, freq_update_stable, freq_update_prev} <= {freq_update, freq_update_meta, freq_update_stable};
 
@@ -42,6 +44,7 @@ module tod #(
         if (!rst_n) begin
             phase_offset_local <= 32'd0;
             {phase_update_meta, phase_update_stable, phase_update_prev} <= 3'b000;
+            do_phase_update <= 1'b0;
         end else begin
             {phase_update_meta, phase_update_stable, phase_update_prev} <= {phase_update, phase_update_meta, phase_update_stable};
 
@@ -49,13 +52,12 @@ module tod #(
             if ({phase_update_prev, phase_update_stable} == 2'b01) begin
                 do_phase_update <= 1'b1;
             end
-            if (do_phase_update && !ns_half_top_r) begin
+            if (do_phase_update && !ns_half_top_r && !phase_update_done) begin
                 do_phase_update <= 1'b0;
                 phase_offset_local <= phase_offset;
+            end else if (phase_update_done) begin
+                phase_offset_local <= 32'd0;
             end
-            // if (phase_update_done) begin
-            //     phase_offset_local <= 32'd0;
-            // end
         end
     end
 
@@ -76,6 +78,7 @@ module tod #(
     localparam COUNTER_TOP = (CLK_FREQ - 1) >> 4;
     localparam COUNTER_BOTTOM = (CLK_FREQ - 1) & 4'hF;
 
+    /* Used combinatorial logic, to have signal valid before next edge after the condition is valid */
     assign wrap_ns_r = ns_top_r && (ns_counter[3:0] == COUNTER_BOTTOM);
     assign wrap_half_ns_r = ns_half_top_r && (ns_counter[3:0] == COUNTER_HALF_BOTTOM);
 
@@ -85,21 +88,23 @@ module tod #(
             one_sec <= 32'd0;
             pps_out <= 1'b0;
             ns_top_r <= 1'b0;
-            // wrap_ns_r <= 1'b0;
+            
+            adj_prepared <= 1'b0;
+            adj_done <= 1'b0;
+            phase_update_done <= 1'd0;
         end else begin
             ns_half_top_r <= (ns_counter[26:4] == COUNTER_HALF_TOP);  // slow upper bits (of 62_499_999) — registered early
-            // wrap_half_ns_r <= ns_half_top_r && (ns_counter[3:0] == COUNTER_HALF_BOTTOM); // fast lower bits only in final compare
+            ns_top_r <= (ns_counter[26:4] == COUNTER_TOP);  // slow upper bits (of 124_999_999) — registered early
+
+            phase_update_done <= 1'b0;
 
             if (ns_half_top_r && !adj_prepared) begin
                 adj_prepared <= 1'b1;
+                phase_update_done <= 1'b1;
                 next_ns_counter <= COUNTER_HALF +
-                    (freq_adj_local[31] ? +freq_adj_local[23:0] : -{freq_adj_local[23:0], 3'b000}) +
-                    (phase_offset_local[31] ? +phase_offset_local[23:0] : -phase_offset_local[23:0]);
+                    (freq_adj_local[31] ? -freq_adj_local[23:0] : +{freq_adj_local[23:0], 3'b000}) +
+                    (phase_offset_local[31] ? -phase_offset_local[23:0] : +phase_offset_local[23:0]);
             end
-
-            ns_top_r <= (ns_counter[26:4] == COUNTER_TOP);  // slow upper bits (of 124_999_999) — registered early
-            // wrap_ns_r <= ns_top_r && (ns_counter[3:0] == COUNTER_BOTTOM); // fast lower bits only in final compare
-            // @up: ns_top_r arrive time can be greater then clock period, but it have to be valid before "ns_counter[3:0] == 4'hF"
 
             if (wrap_ns_r) begin
                 ns_counter <= 27'd0; 
@@ -118,7 +123,7 @@ module tod #(
             end
 
             if (pps_out && ns_counter[10] == 1) begin
-                pps_out <= 1'b0; /* Deassert after "1024 * ns_counter resolution" period */
+                pps_out <= 1'b0; /* Deassert after 1024 clk period */
             end
         end
     end
