@@ -21,8 +21,9 @@ reg wrap_ns_r = 0;
 always @(posedge pll_clk) begin
 
     ns_top_r <= (ns_counter[27:4] == 24'hEE6B27);  // slow upper bits (of 249_999_999) — registered early
-    wrap_ns_r <= ns_top_r && (ns_counter[3:0] == 4'hF); // fast lower bits only in final compare
-    // @up: ns_top_r arrive time can be greater then clock period, but it have to be valid before "ns_counter[3:0] == 4'hF"
+    wrap_ns_r <= ns_top_r && (ns_counter[3:0] == 4'hE); // fast lower bits only in final compare
+    // @up: ns_top_r arrive time can be greater then clock period, but it have to be valid before "ns_counter[3:0] == 4'hE"
+    // on value 4'hF wrap_ns_r is asserted and counters wraps from 249_999_999 to 0
 
     ns_counter <= wrap_ns_r ? 28'd0 : ns_counter + 28'd1;
 
