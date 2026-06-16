@@ -6,7 +6,7 @@ module tod #(
     input pps_in,
     input [31:0] freq_adj,
     input freq_update,
-    input [31:0] phase_offset,
+    input [31:0] phase_adj,
     input phase_update,
     output reg pps_out,
     output reg [31:0] latched_seconds,
@@ -14,7 +14,7 @@ module tod #(
 
     /* Control signal CDC */
     reg [31:0] freq_adj_local;
-    reg [31:0] phase_offset_local;
+    reg [31:0] phase_adj_local;
     reg freq_update_meta, freq_update_stable, freq_update_prev;
     reg phase_update_meta, phase_update_stable, phase_update_prev;
     reg do_freq_update;
@@ -42,7 +42,7 @@ module tod #(
 
     always @(posedge clk) begin
         if (!rst_n) begin
-            phase_offset_local <= 32'd0;
+            phase_adj_local <= 32'd0;
             {phase_update_meta, phase_update_stable, phase_update_prev} <= 3'b000;
             do_phase_update <= 1'b0;
         end else begin
@@ -54,9 +54,9 @@ module tod #(
             end
             if (do_phase_update && !ns_half_top_r && !phase_update_done) begin
                 do_phase_update <= 1'b0;
-                phase_offset_local <= phase_offset;
+                phase_adj_local <= phase_adj;
             end else if (phase_update_done) begin
-                phase_offset_local <= 32'd0;
+                phase_adj_local <= 32'd0;
             end
         end
     end
@@ -103,7 +103,7 @@ module tod #(
                 phase_update_done <= 1'b1;
                 next_ns_counter <= COUNTER_HALF +
                     (freq_adj_local[31] ? -freq_adj_local[23:0] : +{freq_adj_local[23:0], 3'b000}) +
-                    (phase_offset_local[31] ? -phase_offset_local[23:0] : +phase_offset_local[23:0]);
+                    (phase_adj_local[31] ? -phase_adj_local[23:0] : +phase_adj_local[23:0]);
             end
 
             if (wrap_ns_r) begin
@@ -128,6 +128,9 @@ module tod #(
         end
     end
 
+    // --------------------------------------------------------
+    //  pps_in CDC
+    // --------------------------------------------------------
     reg pps_meta, pps_stable, pps_prev;
 
     always @(posedge clk) begin

@@ -11,7 +11,7 @@ module tod_tb;
     wire [31:0] latched_nanoseconds;
     reg [31:0] freq_adj;
     reg freq_update;
-    reg [31:0] phase_offset;
+    reg [31:0] phase_adj;
     reg phase_update;
 
     tod #(
@@ -22,7 +22,7 @@ module tod_tb;
         .pps_in(pps_in),
         .freq_adj(freq_adj),
         .freq_update(freq_update),
-        .phase_offset(phase_offset),
+        .phase_adj(phase_adj),
         .phase_update(phase_update),
         .pps_out(pps_out),
         .latched_seconds(latched_seconds),
@@ -56,7 +56,7 @@ module tod_tb;
     end
 
     initial begin
-        phase_offset = 32'd1;
+        phase_adj = 32'd1;
         phase_update = 1'b0;
         #1000000
         phase_update = 1'b1;
