@@ -45,190 +45,71 @@ module signal_shifter #(
             end
 		end
     endgenerate
+
+    function integer circular_prev;
+        input integer index;
+        input integer count;
+        input integer distance;
+        integer value;
+        begin
+            circular_prev = (index + count - (distance % count)) % count;
+            value = circular_prev;
+        end
+    endfunction
+
+    localparam REG_WIDTH = $clog2(CLOCK_COUNT);
+
+    reg [REG_WIDTH-1:0] phase_offset;
+    reg [3:0] period_count; //assume reg size as "shift" reg for now
+
+    always @(*) begin
+        case (shift)
+            4'd0: begin period_count = 0; phase_offset = 0; end
+            4'd1: begin period_count = 0 / CLOCK_COUNT; phase_offset = (0 % CLOCK_COUNT) + 1; end
+            4'd2: begin period_count = 1 / CLOCK_COUNT; phase_offset = (1 % CLOCK_COUNT) + 1; end
+            4'd3: begin period_count = 2 / CLOCK_COUNT; phase_offset = (2 % CLOCK_COUNT) + 1; end
+            4'd4: begin period_count = 3 / CLOCK_COUNT; phase_offset = (3 % CLOCK_COUNT) + 1; end
+            4'd5: begin period_count = 4 / CLOCK_COUNT; phase_offset = (4 % CLOCK_COUNT) + 1; end
+            4'd6: begin period_count = 5 / CLOCK_COUNT; phase_offset = (5 % CLOCK_COUNT) + 1; end
+            4'd7: begin period_count = 6 / CLOCK_COUNT; phase_offset = (6 % CLOCK_COUNT) + 1; end
+            4'd8: begin period_count = 7 / CLOCK_COUNT; phase_offset = (7 % CLOCK_COUNT) + 1; end
+            4'd9: begin period_count = 8 / CLOCK_COUNT; phase_offset = (8 % CLOCK_COUNT) + 1; end
+            4'd10: begin period_count = 9 / CLOCK_COUNT; phase_offset = (9 % CLOCK_COUNT) + 1; end
+            4'd11: begin period_count = 10 / CLOCK_COUNT; phase_offset = (10 % CLOCK_COUNT) + 1; end
+            4'd12: begin period_count = 11 / CLOCK_COUNT; phase_offset = (11 % CLOCK_COUNT) + 1; end
+            4'd13: begin period_count = 12 / CLOCK_COUNT; phase_offset = (12 % CLOCK_COUNT) + 1; end
+            4'd14: begin period_count = 13 / CLOCK_COUNT; phase_offset = (13 % CLOCK_COUNT) + 1; end
+            4'd15: begin period_count = 14 / CLOCK_COUNT; phase_offset = (14 % CLOCK_COUNT) + 1; end
+
+            default: begin period_count = 0; phase_offset = 0; end
+        endcase
+    end
+
     generate
         for (g = 0; g < CLOCK_COUNT; g = g + 1) begin
             always @(posedge clk[g]) begin
-                case (shift)
-                    4'd1: begin
-                        if (edge_detected[(g + 4) % 5]) begin /* edge detected clock phase before */
-                            signal_drive[g] <= 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end
+                if (period_count == 0) begin
+                    if (edge_detected[circular_prev(g, CLOCK_COUNT, phase_offset)]) begin
+                        signal_drive[g] <= 1'b1;
+                    end else if (!signal) begin
+                        signal_drive[g] <= 1'b0;
                     end
-                    4'd2: begin
-                        if (edge_detected[(g + 3) % 5]) begin /* edge detected 2 clock phases before */
-                            signal_drive[g] <= 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end
+                end else begin
+                    if (edge_detected[circular_prev(g, CLOCK_COUNT, phase_offset)]) begin
+                        delay_pending[g] <= 1'b1;
+                        delay[g] <= period_count - 1;
                     end
-                    4'd3: begin
-                        if (edge_detected[(g + 2) % 5]) begin /* edge detected 3 clock phases before */
-                            signal_drive[g] <= 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end
+                    if (delay_pending[g] && delay[g]) begin
+                        delay[g] <= delay[g] - 1'b1;
+                    end else if (!signal) begin
+                        signal_drive[g] <= 1'b0;
+                    end else if (delay_pending[g]) begin
+                        delay_pending[g] <= 1'b0;
+                        signal_drive[g] <= 1'b1;
                     end
-                    4'd4: begin
-                        if (edge_detected[(g + 1) % 5]) begin /* edge detected 4 clock phases before */
-                            signal_drive[g] <= 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end
-                    end
-                    4'd5: begin
-                        if (edge_detected[g]) begin /* edge detected 5 clock phases before - self edge detector, one period later */
-                            signal_drive[g] <= 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end
-                    end
-                    4'd6: begin
-                        if (edge_detected[(g + 4) % 5]) begin /* edge detected 6 clock phases before */
-                            /* "delay[g]" is set to 0, because "delay_pending[g]" was set to 1 and it provides one period delay 
-                                which was intended - so incrementing "delay[g]" will extends the delay by another periods of clock */
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd0;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd7: begin
-                        if (edge_detected[(g + 3) % 5]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd0;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd8: begin
-                        if (edge_detected[(g + 2) % 5]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd0;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd9: begin
-                        if (edge_detected[(g + 1) % 5]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd0;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd10: begin
-                        if (edge_detected[g]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd0;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd11: begin
-                        if (edge_detected[(g + 4) % 5]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd1;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd12: begin
-                        if (edge_detected[(g + 3) % 5]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd1;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd13: begin
-                        if (edge_detected[(g + 2) % 5]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd1;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd14: begin
-                        if (edge_detected[(g + 1) % 5]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd1;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                    4'd15: begin
-                        if (edge_detected[g]) begin
-                            delay_pending[g] <= 1'b1;
-                            delay[g] <= 3'd1;
-                        end 
-                        if (delay_pending[g] && delay[g]) begin
-                            delay[g] <= delay[g] - 1'b1;
-                        end else if (!signal) begin
-                            signal_drive[g] <= 1'b0;
-                        end else if (delay_pending[g]) begin
-                            delay_pending[g] <= 1'b0;
-                            signal_drive[g] <= 1'b1;
-                        end
-                    end
-                endcase
+                end
             end
-		end
+        end
     endgenerate
 
     always @(*) begin

@@ -3,16 +3,16 @@
 
 module signal_shifter_tb;
 
-    reg rst_n;  
-    reg [4:0] clk;
-    reg signal;
-    reg [3:0] shift;
-    wire shifted;
-
     localparam CLOCK_COUNT = 5;
     localparam CLOCK_PERIOD = 100;
     localparam CLOCK_PERIOD_HALF = CLOCK_PERIOD/2;
     localparam CLOCK_PHASE_SHIFT = CLOCK_PERIOD/CLOCK_COUNT;
+
+    reg rst_n;  
+    reg [CLOCK_COUNT-1:0] clk;
+    reg signal;
+    reg [3:0] shift;
+    wire shifted;
 
     genvar g;
     generate
@@ -31,11 +31,11 @@ module signal_shifter_tb;
         input [7:0] _shift;
         begin
             shift <= _shift;
-            #10;
+            #100;
             signal <= 1'b1;
-            #(5*CLOCK_PERIOD);
+            #(20*CLOCK_PERIOD);
             signal <= 1'b0;
-            #(10*CLOCK_PERIOD);
+            #(50*CLOCK_PERIOD);
         end
     endtask
 
@@ -64,7 +64,7 @@ module signal_shifter_tb;
         edge_delay = ($time - t_a)/CLOCK_PHASE_SHIFT;
 
     signal_shifter #(
-        .CLOCK_COUNT(5)
+        .CLOCK_COUNT(CLOCK_COUNT)
     ) UUT (
         .rst_n(rst_n),
         .clk(clk),
