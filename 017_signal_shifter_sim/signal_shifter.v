@@ -1,36 +1,52 @@
-module signal_shifter (
+module signal_shifter #(
+    parameter CLOCK_COUNT = 5
+) (
     input rst_n,
-    input [4:0] clk,
+    input [CLOCK_COUNT-1:0] clk,
     input signal,
     input [3:0] shift,
     output reg shifted
 );
 
-    reg [4:0] prev_signal;
-    reg [4:0] edge_detected;
-    reg [4:0] signal_drive = 0;
-    reg [4:0] delay_pending = 0;
-    reg [2:0] delay [0:4];
+    generate
+        if (CLOCK_COUNT < 2 || CLOCK_COUNT > 5) begin: INVALID_CLOCK_COUNT
+            INVALID_PARAMETER_VALUE invalid_parameter_value();
+        end
+    endgenerate
+
+    reg [CLOCK_COUNT-1:0] prev_signal;
+    reg [CLOCK_COUNT-1:0] edge_detected;
+    reg [CLOCK_COUNT-1:0] signal_drive = 0;
+    reg [CLOCK_COUNT-1:0] delay_pending = 0;
+    reg [2:0] delay [0:CLOCK_COUNT-1];
+
+    function integer previous_index;
+        input integer g;
+        input integer count;
+        input integer offset;
+        begin
+            previous_index = (g + count - offset) % count;
+        end
+    endfunction
 
     genvar g;
     generate
-        for (g = 0; g < 5; g = g + 1) begin
+        for (g = 0; g < CLOCK_COUNT; g = g + 1) begin
+            wire signal_rising_edge = !prev_signal[g] && signal;
+            wire edge_detected_previous_clock = edge_detected[previous_index(g, CLOCK_COUNT, 1)];
+
             always @(posedge clk[g]) begin
                 /* Edge detected, but previous clock phase have not seen it yet 
                     - previously i checked if "edge_detected == 0", but this creates additional combinatorial logic that introduces signal delay
-                        and with such low slack (as from clock phase to phase) we need to avoid combinatorial logic and routing delays */
-                if (!prev_signal[g] && signal && !edge_detected[(g + 4) % 5]) begin 
-                    edge_detected[g] <= 1'b1;
-                end else begin
-                    edge_detected[g] <= 1'b0;
-                end
-
+                        and with such low slack (as from clock phase to phase) we need to avoid combinatorial logic and routing delays so it is sufficient
+                        to only check if previous clock saw rising edge */
+                edge_detected[g] <= signal_rising_edge && !edge_detected_previous_clock;
                 prev_signal[g] <= signal;
             end
 		end
     endgenerate
     generate
-        for (g = 0; g < 5; g = g + 1) begin
+        for (g = 0; g < CLOCK_COUNT; g = g + 1) begin
             always @(posedge clk[g]) begin
                 case (shift)
                     4'd1: begin

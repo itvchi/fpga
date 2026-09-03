@@ -63,7 +63,9 @@ module signal_shifter_tb;
     always @(posedge shifted)
         edge_delay = ($time - t_a)/CLOCK_PHASE_SHIFT;
 
-    signal_shifter UUT (
+    signal_shifter #(
+        .CLOCK_COUNT(5)
+    ) UUT (
         .rst_n(rst_n),
         .clk(clk),
         .signal(signal),
