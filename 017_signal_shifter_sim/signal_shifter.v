@@ -5,7 +5,9 @@ module signal_shifter #(
     input [CLOCK_COUNT-1:0] clk,
     input signal,
     input [3:0] shift,
-    output reg shifted
+    input [9:0] length,
+    output reg shifted,
+    output reg shifted_stretched
 );
 
     generate
@@ -116,6 +118,47 @@ module signal_shifter #(
         case (shift)
             3'b000: shifted = signal;
             default: shifted = |signal_drive;
+        endcase
+    end
+
+    /* Signal length tuning */
+    reg stretched;
+    reg [9:0] stretch_length;
+    reg prev_stretched;
+    wire signal_rising_edge = !prev_signal[0] && signal;
+    wire stretched_rising_edge = !prev_stretched && stretched;
+
+    always @(posedge clk[0]) begin
+        prev_stretched <= stretched;
+    end
+
+    always @(posedge clk[0]) begin
+        if (!stretched && signal_rising_edge) begin
+            stretched <= 1'b1;
+            stretch_length <= length;
+        end else if (stretched_rising_edge) begin
+            stretch_length <= length;
+        end else if (stretch_length) begin
+            stretch_length <= stretch_length - 1'd1;
+        end else begin
+            stretched <= 1'b0;
+        end
+    end
+
+    reg shifted_was_high;
+
+    always @(posedge clk[0]) begin
+        if (shifted) begin
+            shifted_was_high <= 1'b1;
+        end else if (!shifted_stretched) begin
+            shifted_was_high <= 1'b0;
+        end
+    end
+
+    always @(*) begin
+        case (length)
+            3'b000: shifted_stretched = shifted;
+            default: shifted_stretched = (shifted || shifted_was_high) && stretched;
         endcase
     end
 

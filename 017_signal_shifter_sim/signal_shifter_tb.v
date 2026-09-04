@@ -13,6 +13,7 @@ module signal_shifter_tb;
     reg signal;
     reg [3:0] shift;
     wire shifted;
+    wire shifted_stretched;
 
     genvar g;
     generate
@@ -70,7 +71,9 @@ module signal_shifter_tb;
         .clk(clk),
         .signal(signal),
         .shift(shift),
-        .shifted(shifted)
+        .length(10'd50),
+        .shifted(shifted),
+        .shifted_stretched(shifted_stretched)
     );
 
     initial begin
